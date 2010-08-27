@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 
-require 'mbox/mail/header'
-
 class Mbox
     class Mail
         class Headers < Hash
@@ -25,12 +23,12 @@ class Mbox
             end
 
             def normalize
-                status = Struct.new(:new, :old)
+                status = Struct.new(:read, :old)
 
                 if !self['Status']
-                    self['Status'] = status.new(true, false)
+                    self['Status'] = status.new(false, false)
                 else
-                    self['Status'] = status.new(!self['Status'].include?('R'), self['Status'].include?('O'))
+                    self['Status'] = status.new(self['Status'].include?('R'), self['Status'].include?('O'))
                 end
             end
 

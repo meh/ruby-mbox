@@ -23,6 +23,9 @@ class Mbox
             def initialize (content=[])
                 self.insert(-1, *content)
             end
+
+            def normalize
+            end
         end
     end
 end

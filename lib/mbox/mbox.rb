@@ -22,6 +22,18 @@ require 'mbox/mail'
 class Mbox
     extend Forwardable
 
+    def self.open (name, box)
+        begin
+            mbox      = Mbox.new(File.new("#{box}/#{name}", 'r'))
+            mbox.name = name
+
+            return mbox
+        rescue
+            puts $!
+            return nil
+        end
+    end
+
     attr_accessor :name
 
     def initialize (what, options={})
@@ -40,17 +52,6 @@ class Mbox
         end
     end
 
-    def self.open (name, box)
-        begin
-            mbox      = Mbox.new(File.new("#{box}/#{name}", 'r'))
-            mbox.name = name
-
-            return mbox
-        rescue
-            return nil
-        end
-    end
-
     def parse (options)
         Mbox.def_delegators :@internal, :[], :each, :length, :size, :first, :last
 
@@ -65,9 +66,9 @@ class Mbox
         @internal[index] = Mail.parse(@stream)
     end
 
-    def new?
+    def has_unread?
         self.each {|mail|
-            if mail.headers['Status'].new
+            if !mail.headers['Status'].read
                 return true
             end
         }

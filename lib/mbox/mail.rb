@@ -52,23 +52,19 @@ class Mbox
 
             meta.from << line
 
-            while !stream.eof? && !(line = stream.readline).match(/^From [^\s]+ .{24}/) && last[:line].empty?
+            while !stream.eof? && !((line = stream.readline).match(/^From [^\s]+ .{24}/) && last[:line].empty?)
                 if inside[:meta]
                     if line.match(/^>+/)
                         meta.from << line
                     else
                         inside[:meta]    = false
                         inside[:headers] = true
-
-                        meta.normalize
                         next
                     end
                 elsif inside[:headers]
                     if line.strip.empty?
                         inside[:headers] = false
                         inside[:content] = true
-
-                        headers.normalize
                         next
                     end
 
@@ -105,6 +101,8 @@ class Mbox
                 elsif inside[:content]
                 
                 end
+
+                last[:line] = line.strip
             end
 
             if !stream.eof? && line
@@ -140,6 +138,10 @@ class Mbox
             @meta    = meta
             @headers = headers
             @content = content
+
+            @meta.normalize
+            @headers.normalize
+            @content.normalize
         end
     end
 end
