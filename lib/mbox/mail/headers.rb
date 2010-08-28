@@ -25,10 +25,12 @@ class Mbox
             def normalize
                 status = Struct.new(:read, :old)
 
-                if !self['Status']
-                    self['Status'] = status.new(false, false)
-                else
-                    self['Status'] = status.new(self['Status'].include?('R'), self['Status'].include?('O'))
+                if !self['Status'].is_a?(Struct)
+                    if !self['Status'] || !self['Status'].is_a?(String)
+                        self['Status'] = status.new(false, false)
+                    else
+                        self['Status'] = status.new(self['Status'].include?('R'), self['Status'].include?('O'))
+                    end
                 end
             end
 
@@ -36,9 +38,8 @@ class Mbox
                 result = ''
 
                 self.each {|name, values|
-                    values = [values].flatten
-                    values.each {|value|
-                        if name == "Status"
+                    [values].flatten.each {|value|
+                        if name == 'Status' && value.is_a?(Struct)
                             result << "#{name}: #{value.read ? 'R' : ''}#{value.old ? 'O' : ''}\n"
                         else
                             result << "#{name}: #{value}\n"

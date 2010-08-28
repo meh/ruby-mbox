@@ -22,7 +22,7 @@ require 'mbox/mail'
 class Mbox
     extend Forwardable
 
-    def self.open (name, box)
+    def self.open (name, box, options={})
         begin
             mbox      = Mbox.new(File.new("#{box}/#{name}", 'r'))
             mbox.name = name
