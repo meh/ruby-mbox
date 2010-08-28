@@ -134,6 +134,10 @@ class Mbox
             end
         end
 
+        def unread?
+            !self.headers['Status'].read rescue true
+        end
+
         private
 
         def initialize (meta, headers, content)
