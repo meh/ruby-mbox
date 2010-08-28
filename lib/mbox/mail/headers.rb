@@ -35,8 +35,15 @@ class Mbox
             def inspect
                 result = ''
 
-                self.each {|name, value|
-                    result << "#{name}: #{value}\n"
+                self.each {|name, values|
+                    values = [values] if !values.is_a?(Array)
+                    values.each {|value|
+                        if name == "Status"
+                            result << "#{name}: #{value.read ? 'R' : ''}#{value.old ? 'O' : ''}\n"
+                        else
+                            result << "#{name}: #{value}\n"
+                        end
+                    }
                 }
 
                 return result

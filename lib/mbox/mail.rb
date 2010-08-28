@@ -81,7 +81,9 @@ class Mbox
                         if headers[name]
                             if headers[name].is_a?(String)
                                 headers[name] = [headers[name]]
-                            elsif headers[name].is_a?(Array)
+                            end
+
+                            if headers[name].is_a?(Array)
                                 headers[name] << value
                             end
                         else
