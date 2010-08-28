@@ -53,7 +53,7 @@ class Mbox
     end
 
     def parse (options)
-        Mbox.def_delegators :@internal, :[], :each, :length, :size, :first, :last
+        Mbox.def_delegators :@internal, :[], :each, :length, :size, :first, :last, :all?, :any?, :chunk, :collect, :count, :cycle, :detect, :entries, :find, :find_all, :grep, :group_by, :include?, :map, :max, :max_by, :member?, :min, :min_by, :none?, :one?, :reject, :reverse_each, :select, :sort, :sort_by, :take, :to_a, :zip
 
         while mail = Mail.parse(@stream, options)
             @internal << mail
