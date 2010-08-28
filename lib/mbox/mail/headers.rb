@@ -36,7 +36,7 @@ class Mbox
                 result = ''
 
                 self.each {|name, values|
-                    values = [values] if !values.is_a?(Array)
+                    values = [values].flatten
                     values.each {|value|
                         if name == "Status"
                             result << "#{name}: #{value.read ? 'R' : ''}#{value.old ? 'O' : ''}\n"
