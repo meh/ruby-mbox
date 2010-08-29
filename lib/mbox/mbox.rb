@@ -28,8 +28,9 @@ class Mbox
             mbox.name = name
 
             return mbox
-        rescue
-            puts $!
+        rescue Exception => e
+            puts e.inspect
+
             return nil
         end
     end

@@ -29,8 +29,9 @@ class Mbox
             end
 
             last = {
-                :line   => '',
-                :header => ''
+                :line    => '',
+                :header  => '',
+                :content => ''
             }
 
             meta    = Mbox::Mail::Meta.new
@@ -59,12 +60,16 @@ class Mbox
                     else
                         inside[:meta]    = false
                         inside[:headers] = true
+
+                        last[:line] = line.strip
                         next
                     end
                 elsif inside[:headers]
                     if line.strip.empty?
                         inside[:headers] = false
                         inside[:content] = true
+
+                        last[:line] = line.strip
                         next
                     end
 
@@ -72,6 +77,7 @@ class Mbox
                         matches = line.match(/^([^:]*):\s*(.*)$/)
 
                         if !matches
+                            last[:line] = line.strip
                             next
                         end
 
@@ -101,10 +107,19 @@ class Mbox
                         end
                     end
                 elsif inside[:content]
-                
+                    if options[:headersOnly]
+                        last[:line] = line.strip
+                        next
+                    end
+
+                    last[:content] << line
                 end
 
                 last[:line] = line.strip
+            end
+
+            if !last[:content].empty?
+                content.parse(headers['Content-Type'], last[:content])
             end
 
             if !stream.eof? && line

@@ -8,7 +8,7 @@ require 'mbox'
 LISTEN = 'localhost'
 PORT   = 9001
 
-MAILDIR   = '/home/meh/mail'
+MAILDIR   = "#{ENV['HOME']}/mail"
 MAILBOXES = ['inbox', 'tracemonkey', 'mozilla']
 EVERY     = 120
 
@@ -67,11 +67,11 @@ while true
 
     MAILBOXES.each {|mailbox|
         if mbox = DATA[:mboxes][mailbox]
-            if mbox.at <= File.ctime("#{MAILDIR}/#{mailbox}")
-                DATA[:mboxes][mailbox] = Mbox.open(mailbox, MAILDIR)
+            if mbox.at > File.ctime("#{MAILDIR}/#{mailbox}")
+                next
             end
-        else
-            DATA[:mboxes][mailbox] = Mbox.open(mailbox, MAILDIR)
         end
+
+        DATA[:mboxes][mailbox] = Mbox.open(mailbox, MAILDIR, { :headersOnly => true })
     }
 end

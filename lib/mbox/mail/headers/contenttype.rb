@@ -15,20 +15,28 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 
-require 'mbox/mail/file'
-
 class Mbox
     class Mail
-        class Content < Array
-            def initialize (content=[])
-                self.insert(-1, *content)
-            end
+        class Headers < Hash
+            class ContentType
+                attr_accessor :mime, :charset, :boundary
 
-            def parse (type, text)
+                def self.parse (text)
+                    stuff = text.split(/;\s*/)
+                    type  = stuff.shift
 
-            end
+                    ContentType.new(Hash[stuff.map {|stuff| stuff.split(/=/)}].merge({ :mime => type }))
+                end
 
-            def normalize
+                def initialize (stuff={})
+                    @mime     = stuff[:mime] || 'text/plain'
+                    @charset  = stuff[:charset]
+                    @boundary = stuff[:boundary]
+                end
+
+                def to_s
+                    "#{
+                end
             end
         end
     end

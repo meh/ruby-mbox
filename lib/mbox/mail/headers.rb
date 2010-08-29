@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 
+require 'mbox/mail/headers/status'
+
 class Mbox
     class Mail
         class Headers < Hash
@@ -23,13 +25,19 @@ class Mbox
             end
 
             def normalize
-                status = Struct.new(:read, :old)
-
-                if !self['Status'].is_a?(Struct)
+                if !self['Status'].is_a?(Status)
                     if !self['Status'] || !self['Status'].is_a?(String)
-                        self['Status'] = status.new(false, false)
+                        self['Status'] = Status.new(false, false)
                     else
-                        self['Status'] = status.new(self['Status'].include?('R'), self['Status'].include?('O'))
+                        self['Status'] = Status.new(self['Status'].include?('R'), self['Status'].include?('O'))
+                    end
+                end
+
+                if !self['Content-Type'].is_a?(ContentType)
+                    if !self['Content-Type'] || !self['Content-Type'].is_a?(String)
+                        self['Content-Type'] = ContentType.new
+                    else
+                        self['Content-Type'] = ContentType.parse(self['Content-Type'])
                     end
                 end
             end
@@ -39,11 +47,7 @@ class Mbox
 
                 self.each {|name, values|
                     [values].flatten.each {|value|
-                        if name == 'Status' && value.is_a?(Struct)
-                            result << "#{name}: #{value.read ? 'R' : ''}#{value.old ? 'O' : ''}\n"
-                        else
-                            result << "#{name}: #{value}\n"
-                        end
+                        result << "#{name}: #{value}\n"
                     }
                 }
 

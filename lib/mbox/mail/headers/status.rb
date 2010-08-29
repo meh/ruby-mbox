@@ -15,20 +15,20 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 
-require 'mbox/mail/file'
-
 class Mbox
     class Mail
-        class Content < Array
-            def initialize (content=[])
-                self.insert(-1, *content)
-            end
+        class Headers < Hash
+            class Status
+                attr_accessor :read, :old
 
-            def parse (type, text)
+                def initialize (read, old)
+                    @read = read
+                    @old  = old
+                end
 
-            end
-
-            def normalize
+                def to_s
+                    "#{'R' if self.read}#{'O' if self.old}"
+                end
             end
         end
     end
