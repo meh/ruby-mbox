@@ -16,6 +16,7 @@
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 
 require 'mbox/mail/headers/status'
+require 'mbox/mail/headers/contenttype'
 
 class Mbox
     class Mail

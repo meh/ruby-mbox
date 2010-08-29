@@ -35,7 +35,7 @@ class Mbox
                 end
 
                 def to_s
-                    "#{
+                    "#{self.mime}#{"; #{self.charset}" if self.charset}"
                 end
             end
         end
