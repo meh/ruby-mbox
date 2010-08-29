@@ -34,7 +34,7 @@ class Mbox
         end
     end
 
-    attr_accessor :name
+    attr_accessor :name, :at
 
     def initialize (what, options={})
         @internal = []
@@ -58,6 +58,8 @@ class Mbox
         while mail = Mail.parse(@stream, options)
             @internal << mail
         end
+
+        @at = Time.now
     end
 
     def [] (index, options={})
