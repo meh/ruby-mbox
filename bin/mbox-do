@@ -12,7 +12,7 @@ if ARGV.first == '-t'
     target = ARGV.shift
 end
 
-socket = TCPSocket.new(HOST, PORT)
+socket = TCPSocket.new(HOST, PORT) rescue exit(1)
 
 case ARGV.shift
 
