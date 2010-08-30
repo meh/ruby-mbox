@@ -22,34 +22,33 @@ Thread.new {
     while socket = server.accept
         command = socket.readline
 
-        if !(matches = command.match(/^(\w+)\s*(.*)$/))
+        if !(matches = command.match(/^(\w+|\*)\s*(\w+)\s*(.*)$/))
             socket.close
             next
         end
 
+        target  = matches[1]
         command = matches[2]
+        rest    = matches[3]
 
-        case matches[1]
+        case command
 
-        when 'get'
-            if !(matches = command.match(/^(\w+)\s*(.*)$/))
-                socket.close
-                next
-            end
+        when 'list'
+            command = rest
 
-            command = matches[2]
+            if target == '*'
+                case command
 
-            case matches[1]
-
-            when 'unread'
-                if command == 'list'
-                    socket.write(DATA[:mboxes].map {|mbox| mbox[0] if mbox[1].has_unread?}.compact.to_json)
+                when 'unread'
+                    socket.puts(DATA[:mboxes].map {|mbox|
+                        mbox[0] if mbox[1].has_unread?
+                    }.compact.to_json)
                 end
+            else
 
             end
 
         end
-
 
         socket.close
     end

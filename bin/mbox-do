@@ -1,0 +1,29 @@
+#! /usr/bin/env ruby
+require 'socket'
+require 'json'
+
+HOST = 'localhost'
+PORT = 9001
+
+target = '*'
+
+if ARGV.first == '-t'
+    ARGV.shift
+    target = ARGV.shift
+end
+
+socket = TCPSocket.new(HOST, PORT)
+
+case ARGV.shift
+
+when 'list'
+    case ARGV.shift
+    
+    when 'unread'
+        socket.puts("#{target} list unread")
+
+        puts JSON::parse(socket.gets).join("\n")
+    end
+end
+
+socket.close
