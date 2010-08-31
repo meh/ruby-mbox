@@ -36,7 +36,7 @@ class Mbox
                 type = headers['Content-Type']
 
                 if matches = type.mime.match(%r{multipart/(\w+)})
-                    text.sub(/^.*?--#{type.boundary}\n/m, '').sub(/--#{type.boundary}--$/m, '').split("--#{type.boundary}").each {|part|
+                    text.sub(/^.*?--#{type.boundary}\n/m, '').sub(/--#{type.boundary}--$/m, '').split("--#{type.boundary}\n").each {|part|
                         stream  = StringIO.new(part)
 
                         headers = ''
@@ -45,14 +45,15 @@ class Mbox
                         end
                         headers = Headers.new.parse(headers)
 
-                        content = ''
-                        while !stream.eof? && !(line = stream.readline).chomp.empty?
+                        content = stream.readline
+                        while !stream.eof? && line = stream.readline
                             content << line
                         end
+                        content.chomp!
 
                         file = File.new(headers, content)
 
-                        if headers['Content-Disposition'] == 'attachment'
+                        if (headers['Content-Disposition'] || '').match(/^attachment/)
                             self.attachments << file
                         else
                             self << file
