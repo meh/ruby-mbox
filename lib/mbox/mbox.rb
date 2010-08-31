@@ -23,16 +23,10 @@ class Mbox
     extend Forwardable
 
     def self.open (name, box, options={})
-        begin
-            mbox      = Mbox.new(File.new("#{box}/#{name}", 'r'))
-            mbox.name = name
+        mbox      = Mbox.new(File.new("#{box}/#{name}", 'r'))
+        mbox.name = name
 
-            return mbox
-        rescue Exception => e
-            puts e.inspect
-
-            return nil
-        end
+        return mbox
     end
 
     attr_accessor :name, :at

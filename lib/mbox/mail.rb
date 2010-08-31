@@ -29,9 +29,8 @@ class Mbox
             end
 
             last = {
-                :line    => '',
-                :header  => '',
-                :content => ''
+                :line => '',
+                :stuff => ''
             }
 
             meta    = Mbox::Mail::Meta.new
@@ -69,57 +68,28 @@ class Mbox
                         inside[:headers] = false
                         inside[:content] = true
 
-                        last[:line] = line.strip
+                        headers.parse(last[:stuff])
+
+                        last[:line]  = line.strip
+                        last[:stuff] = ''
                         next
                     end
 
-                    if !line.match(/^\s/)
-                        matches = line.match(/^([^:]*):\s*(.*)$/)
-
-                        if !matches
-                            last[:line] = line.strip
-                            next
-                        end
-
-                        name  = matches[1]
-                        value = matches[2]
-
-                        if headers[name]
-                            if headers[name].is_a?(String)
-                                headers[name] = [headers[name]]
-                            end
-
-                            if headers[name].is_a?(Array)
-                                headers[name] << value
-                            end
-                        else
-                            headers[name] = value
-                        end
-
-                        last[:headers] = name
-                    else
-                        if headers[last[:headers]]
-                            if headers[last[:headers]].is_a?(String)
-                                headers[last[:headers]] << " #{line.strip}"
-                            elsif headers[last[:headers]].is_a?(Array)
-                                headers[last[:headers]].last << " #{line.strip}"
-                            end
-                        end
-                    end
+                    last[:stuff] << line
                 elsif inside[:content]
                     if options[:headersOnly]
                         last[:line] = line.strip
                         next
                     end
 
-                    last[:content] << line
+                    last[:stuff] << line
                 end
 
                 last[:line] = line.strip
             end
 
-            if !last[:content].empty?
-                content.parse(headers['Content-Type'], last[:content])
+            if !last[:stuff].empty?
+                content.parse(headers, last[:stuff])
             end
 
             if !stream.eof? && line

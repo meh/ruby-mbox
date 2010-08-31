@@ -18,11 +18,23 @@
 class Mbox
     class Mail
         class File
-            attr_reader :meta, :content
+            attr_reader :headers, :content
 
-            def initialize (meta, content)
-                @meta    = meta
+            def initialize (headers, content)
+                if headers['Content-Type'].charset
+                    content.force_encoding headers['Content-Type'].charset rescue nil
+                end
+
+                if headers['Content-Transfer-Encoding'] == 'base64'
+                    content = Base64.decode64(content)
+                end
+
+                @headers = headers
                 @content = content
+            end
+
+            def to_s
+                @content
             end
         end
     end

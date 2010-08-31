@@ -22,10 +22,19 @@ class Mbox
                 attr_accessor :mime, :charset, :boundary
 
                 def self.parse (text)
-                    stuff = text.split(/;\s*/)
+                    stuff = text.gsub(/\n\r/, '').split(/\s*;\s*/)
                     type  = stuff.shift
 
-                    ContentType.new(Hash[stuff.map {|stuff| stuff.split(/=/)}].merge({ :mime => type }))
+                    ContentType.new(Hash[stuff.map {|stuff|
+                        stuff    = stuff.strip.split(/=/)
+                        stuff[0] = stuff[0].to_sym
+
+                        if stuff[1][0] == '"' && stuff[1][stuff[1].length-1] == '"'
+                            stuff[1] = stuff[1][1, stuff[1].length-2]
+                        end
+
+                        stuff
+                    }].merge({ :mime => type }))
                 end
 
                 def initialize (stuff={})
@@ -35,7 +44,7 @@ class Mbox
                 end
 
                 def to_s
-                    "#{self.mime}#{"; #{self.charset}" if self.charset}"
+                    "#{self.mime}#{"; charset=#{self.charset}" if self.charset}#{"; boundary=#{self.boundary}" if self.boundary}"
                 end
             end
         end

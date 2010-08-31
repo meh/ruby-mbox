@@ -12,6 +12,7 @@ while true
     socket = TCPSocket.new(HOST, PORT) rescue nil
 
     if !socket
+        sleep 10
         redo
     end
 

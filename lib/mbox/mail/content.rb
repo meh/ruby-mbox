@@ -17,15 +17,52 @@
 
 require 'mbox/mail/file'
 
+require 'base64'
+
 class Mbox
     class Mail
         class Content < Array
+            attr_reader :attachments
+
             def initialize (content=[])
                 self.insert(-1, *content)
+
+                @attachments = []
             end
 
-            def parse (type, text)
+            def parse (headers, text)
+                headers.normalize
 
+                type = headers['Content-Type']
+
+                if matches = type.mime.match(%r{multipart/(\w+)})
+                    text.sub(/^.*?--#{type.boundary}\n/m, '').sub(/--#{type.boundary}--$/m, '').split("--#{type.boundary}").each {|part|
+                        stream  = StringIO.new(part)
+
+                        headers = ''
+                        while !stream.eof? && !(line = stream.readline).chomp.empty?
+                            headers << line
+                        end
+                        headers = Headers.new.parse(headers)
+
+                        content = ''
+                        while !stream.eof? && !(line = stream.readline).chomp.empty?
+                            content << line
+                        end
+
+                        file = File.new(headers, content)
+
+                        if headers['Content-Disposition'] == 'attachment'
+                            self.attachments << file
+                        else
+                            self << file
+                        end
+                    }
+                else
+
+                end
+
+                return self
             end
 
             def normalize

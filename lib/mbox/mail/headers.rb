@@ -25,6 +25,50 @@ class Mbox
                 self.merge!(headers)
             end
 
+            def parse (text)
+                stream = StringIO.new(text)
+                last   = nil
+
+                while !stream.eof? && !(line = stream.readline).chomp.empty?
+                    if !line.match(/^\s/)
+                        matches = line.match(/^([^:]*):\s*(.*)$/)
+
+                        if !matches
+                            next
+                        end
+
+                        name  = matches[1]
+                        value = matches[2]
+
+                        if self[name]
+                            if self[name].is_a?(String)
+                                self[name] = [self[name]]
+                            end
+
+                            if self[name].is_a?(Array)
+                                self[name] << value
+                            end
+                        else
+                            self[name] = value
+                        end
+
+                        last = name
+                    else
+                        if self[last]
+                            if self[last].is_a?(String)
+                                self[last] << " #{line}"
+                            elsif self[last].is_a?(Array)
+                                self[last].last << " #{line}"
+                            end
+                        end
+                    end
+                end
+
+                self.normalize
+
+                return self
+            end
+
             def normalize
                 if !self['Status'].is_a?(Status)
                     if !self['Status'] || !self['Status'].is_a?(String)
