@@ -36,7 +36,7 @@ class Mbox
 
             meta    = Mbox::Mail::Meta.new
             headers = Mbox::Mail::Headers.new
-            content = Mbox::Mail::Content.new
+            content = Mbox::Mail::Content.new(headers)
 
             inside = {
                 :meta    => true,
@@ -90,7 +90,7 @@ class Mbox
             end
 
             if !last[:stuff].empty?
-                content.parse(headers, last[:stuff])
+                content.parse(last[:stuff])
             end
 
             if !stream.eof? && line
@@ -142,7 +142,7 @@ class Mbox
         attr_reader :meta, :headers, :content
 
         private
-
+        
         def initialize (meta, headers, content) # :nodoc:
             @meta    = meta
             @headers = headers
@@ -155,12 +155,22 @@ class Mbox
 
         public
 
+        def save (path)
+            file = File.new(path, 'w')
+            file.write(self.to_s)
+            file.close
+        end
+
         # True if the email is unread, false otherwise.
         def unread?
             !self.headers['Status'].read rescue true
         end
 
-        def inspect
+        def to_s
+            "#{self.headers}\n#{self.content}"
+        end
+
+        def inspect # :nodoc:
             "#<Mail:#{self.headers['From']}>"
         end
     end

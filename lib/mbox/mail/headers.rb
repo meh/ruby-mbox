@@ -22,7 +22,9 @@ require 'mbox/mail/headers/contenttype'
 
 class Mbox
     class Mail
+        # Representation of email headers.
         class Headers < Hash
+            # Create a Headers object with starting passed headers.
             def initialize (headers={})
                 self.merge!(headers)
             end
@@ -71,6 +73,10 @@ class Mbox
                 return self
             end
 
+            # Apply normalization to headers.
+            #
+            # Transforms the Status header to a Status object.
+            # Transforms the Content-Type header to a ContentType object.
             def normalize
                 if !self['Status'].is_a?(Status)
                     if !self['Status'] || !self['Status'].is_a?(String)
@@ -89,7 +95,7 @@ class Mbox
                 end
             end
 
-            def inspect
+            def to_s
                 result = ''
 
                 self.each {|name, values|

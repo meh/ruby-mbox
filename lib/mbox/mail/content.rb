@@ -17,22 +17,27 @@
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 #++
 
-require 'mbox/mail/file'
-
 require 'base64'
+
+require 'mbox/mail/file'
 
 class Mbox
     class Mail
         class Content < Array
-            attr_reader :attachments
+            attr_reader :headers, :attachments
 
-            def initialize (content=[])
+            def initialize (headers, content=[], attachments=[])
+                @headers     = headers
+                @attachments = attachments
+
                 self.insert(-1, *content)
-
-                @attachments = []
             end
 
-            def parse (headers, text)
+            def parse (text, headers={})
+                tmp = self.headers.clone
+                tmp.merge!(headers)
+
+                headers = tmp
                 headers.normalize
 
                 type = headers['Content-Type']
@@ -53,8 +58,6 @@ class Mbox
                         end
                         content.chomp!
 
-                        puts content.length
-
                         file = File.new(headers, content)
 
                         if (headers['Content-Disposition'] || '').match(/^attachment/)
@@ -66,7 +69,7 @@ class Mbox
                 else
                     stream = StringIO.new(text)
 
-                    content = !stream.eof? ? stream.readline : ''
+                    content = (!stream.eof?) ? stream.readline : ''
                     while !stream.eof? && line = stream.readline
                         content << line
                     end
@@ -79,6 +82,11 @@ class Mbox
             end
 
             def normalize
+            end
+
+            def to_s
+                if matches = type.mime.match(%r{multipart/(\w+)})
+                end
             end
         end
     end

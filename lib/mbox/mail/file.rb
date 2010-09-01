@@ -20,7 +20,7 @@
 class Mbox
     class Mail
         class File
-            attr_reader :headers, :content
+            attr_reader :name, :headers, :content
 
             def initialize (headers, content)
                 headers.normalize
@@ -33,12 +33,20 @@ class Mbox
                     content = Base64.decode64(content)
                 end
 
+                if matches = headers['Content-Disposition'].match(/filename="(.*?)"/) rescue nil
+                    @name = matches[1]
+                end
+
                 @headers = headers
                 @content = content
             end
 
             def to_s
                 @content
+            end
+
+            def inspect
+                "#<File:#{self.name}>"
             end
         end
     end
