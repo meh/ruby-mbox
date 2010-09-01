@@ -110,7 +110,7 @@ class Mbox
             index  = -1
             
             while line = stream.readline rescue nil
-                if line.match(/^From [^\s]+ .{24}/) && last.empty?
+                if line.match(/^From [^\s]+ .{24}/) && last.chomp.empty?
                     index += 1
 
                     if index >= to

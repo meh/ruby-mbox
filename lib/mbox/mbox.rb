@@ -90,6 +90,7 @@ class Mbox
         end
 
         Mail.seek(@stream, index)
+
         @internal[index] = Mail.parse(@stream)
     end
 
