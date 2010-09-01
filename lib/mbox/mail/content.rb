@@ -1,3 +1,4 @@
+#--
 # Copyleft meh. [http://meh.doesntexist.org | meh.ffff@gmail.com]
 #
 # This file is part of ruby-mbox.
@@ -14,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
+#++
 
 require 'mbox/mail/file'
 
@@ -37,7 +39,7 @@ class Mbox
 
                 if matches = type.mime.match(%r{multipart/(\w+)})
                     text.sub(/^.*?--#{type.boundary}\n/m, '').sub(/--#{type.boundary}--$/m, '').split("--#{type.boundary}\n").each {|part|
-                        stream  = StringIO.new(part)
+                        stream = StringIO.new(part)
 
                         headers = ''
                         while !stream.eof? && !(line = stream.readline).chomp.empty?
@@ -45,11 +47,13 @@ class Mbox
                         end
                         headers = Headers.new.parse(headers)
 
-                        content = stream.readline
+                        content = !stream.eof? ? stream.readline : ''
                         while !stream.eof? && line = stream.readline
                             content << line
                         end
                         content.chomp!
+
+                        puts content.length
 
                         file = File.new(headers, content)
 
@@ -60,7 +64,15 @@ class Mbox
                         end
                     }
                 else
+                    stream = StringIO.new(text)
 
+                    content = !stream.eof? ? stream.readline : ''
+                    while !stream.eof? && line = stream.readline
+                        content << line
+                    end
+                    content.chomp!
+
+                    self << File.new(Headers.new, content)
                 end
 
                 return self

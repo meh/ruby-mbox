@@ -1,3 +1,4 @@
+#--
 # Copyleft meh. [http://meh.doesntexist.org | meh.ffff@gmail.com]
 #
 # This file is part of ruby-mbox.
@@ -14,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
+#++
 
 require 'mbox/mail/headers/status'
 require 'mbox/mail/headers/contenttype'

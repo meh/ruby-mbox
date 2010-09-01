@@ -1,3 +1,4 @@
+#--
 # Copyleft meh. [http://meh.doesntexist.org | meh.ffff@gmail.com]
 #
 # This file is part of ruby-mbox.
@@ -14,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
+#++
 
 class Mbox
     class Mail
@@ -21,6 +23,8 @@ class Mbox
             attr_reader :headers, :content
 
             def initialize (headers, content)
+                headers.normalize
+
                 if headers['Content-Type'].charset
                     content.force_encoding headers['Content-Type'].charset rescue nil
                 end

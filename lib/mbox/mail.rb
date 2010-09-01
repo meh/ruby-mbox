@@ -1,3 +1,4 @@
+#--
 # Copyleft meh. [http://meh.doesntexist.org | meh.ffff@gmail.com]
 #
 # This file is part of ruby-mbox.
@@ -14,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
+#++
 
 require 'mbox/mail/meta'
 require 'mbox/mail/headers'
@@ -21,8 +23,7 @@ require 'mbox/mail/content'
 
 class Mbox
     class Mail
-        attr_reader :meta, :headers, :content
-
+        # Parse an email and get meta attributes, headers and content.
         def self.parse (stream, options={})
             if stream.eof?
                 return nil
@@ -60,7 +61,7 @@ class Mbox
                         inside[:meta]    = false
                         inside[:headers] = true
 
-                        last[:line] = line.strip
+                        last[:line] = line.chomp
                         next
                     end
                 elsif inside[:headers]
@@ -70,7 +71,7 @@ class Mbox
 
                         headers.parse(last[:stuff])
 
-                        last[:line]  = line.strip
+                        last[:line]  = line.chomp
                         last[:stuff] = ''
                         next
                     end
@@ -78,14 +79,14 @@ class Mbox
                     last[:stuff] << line
                 elsif inside[:content]
                     if options[:headersOnly]
-                        last[:line] = line.strip
+                        last[:line] = line.chomp
                         next
                     end
 
                     last[:stuff] << line
                 end
 
-                last[:line] = line.strip
+                last[:line] = line.chomp
             end
 
             if !last[:stuff].empty?
@@ -99,8 +100,9 @@ class Mbox
             return Mail.new(meta, headers, content)
         end
 
-        def self.seek (stream, to, at=nil)
-            if !at
+        # Seek to the given email in the stream.
+        def self.seek (stream, to, whence=IO::SEEK_SET)
+            if whence == IO::SEEK_SET
                 stream.seek(0)
             end
 
@@ -112,20 +114,36 @@ class Mbox
                     index += 1
 
                     if index >= to
-                        line.seek(-line.length, IO::SEEK_CUR)
+                        stream.seek(-line.length, IO::SEEK_CUR)
                         break
                     end
                 end
+
+                last = line
             end
         end
 
-        def unread?
-            !self.headers['Status'].read rescue true
+        # Count the emails in the stream.
+        def self.count (stream)
+            last   = ''
+            length = 0
+            
+            while line = stream.readline rescue nil
+                if line.match(/^From [^\s]+ .{24}/) && last.chomp.empty?
+                    length += 1
+                end
+
+                last = line
+            end
+
+            return length
         end
+
+        attr_reader :meta, :headers, :content
 
         private
 
-        def initialize (meta, headers, content)
+        def initialize (meta, headers, content) # :nodoc:
             @meta    = meta
             @headers = headers
             @content = content
@@ -133,6 +151,17 @@ class Mbox
             @meta.normalize
             @headers.normalize
             @content.normalize
+        end
+
+        public
+
+        # True if the email is unread, false otherwise.
+        def unread?
+            !self.headers['Status'].read rescue true
+        end
+
+        def inspect
+            "#<Mail:#{self.headers['From']}>"
         end
     end
 end
