@@ -72,13 +72,17 @@ class Mbox
                 next
             end
 
-            @internal[counter]  = Mail.parse(@stream, options)
-            counter            += 1
+            if mail = Mail.parse(@stream, options)
+              @internal[counter]  = mail
+              counter            += 1
+            end
 
             if @stream.eof?
                 break
             end
         end
+
+        @internal.compact!
 
         @at = Time.now
 

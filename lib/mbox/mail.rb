@@ -53,6 +53,10 @@ class Mbox
 
             meta.from << line
 
+            if line.empty?
+              return
+            end
+
             while !stream.eof? && !((line = stream.readline).match(/^From [^\s]+ .{24}/) && last[:line].empty?)
                 if inside[:meta]
                     if line.match(/^>+/)
