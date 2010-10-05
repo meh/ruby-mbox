@@ -8,9 +8,9 @@ require 'mbox'
 LISTEN = 'localhost'
 PORT   = 9001
 
-MAILDIR   = "#{ENV['HOME']}/mail"
-MAILBOXES = ['inbox', 'tracemonkey', 'mozilla']
-EVERY   = 120
+MAILDIR   = ENV['MBOX_DAEMON_DIR'] || "#{ENV['HOME']}/mail"
+MAILBOXES = (ENV['MBOX_DAEMON_BOXES'] || 'inbox').split(/\s*[;,]\s*/)
+EVERY     = (ENV['MBOX_DAEMON_EVERY'] || 120).to_i
 
 DATA = {
   :mboxes => {}
