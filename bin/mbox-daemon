@@ -5,7 +5,7 @@ require 'json'
 
 require 'mbox'
 
-LISTEN = 'localhost'
+LISTEN = '127.0.0.1'
 PORT   = 9001
 
 MAILDIR   = ENV['MBOX_DAEMON_DIR'] || "#{ENV['HOME']}/mail"
@@ -62,9 +62,9 @@ Thread.new {
 
 last = Time.now - EVERY - 1
 
-while true
+loop do
   if (last + EVERY) < Time.now
-    `fetchmail &> /dev/null`
+    `fetchmail`
     last = Time.now
   end
 
