@@ -17,20 +17,20 @@
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 #++
 
-class Mbox
-    class Mail
-        class Meta
-            attr_reader :from
+class Mbox; class Mail
 
-            def initialize
-                @from = []
-            end
+class Metadata
+	attr_reader :from
 
-            def normalize
-#                if matches = line.match(/^>*From ([^\s]+) (.{24})/)
-#                    @from << Struct.new(:name, :date).new(matches[1], matches[2])
-#                end
-            end
-        end
-    end
+	def initialize
+		@from = []
+	end
+
+	def parse_from (line)
+		line.match /^>*From ([^\s]+) (.{24})/ do |m|
+			@from << Struct.new(:name, :date).new(m[1], m[2])
+		end
+	end
 end
+
+end; end

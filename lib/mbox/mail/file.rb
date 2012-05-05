@@ -17,37 +17,39 @@
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 #++
 
-class Mbox
-    class Mail
-        class File
-            attr_reader :name, :headers, :content
+require 'base64'
 
-            def initialize (headers, content)
-                headers.normalize
+class Mbox; class Mail
 
-                if headers['Content-Type'].charset
-                    content.force_encoding headers['Content-Type'].charset rescue nil
-                end
+class File
+	attr_reader :name, :headers, :content
 
-                if headers['Content-Transfer-Encoding'] == 'base64'
-                    content = Base64.decode64(content)
-                end
+	def initialize (headers, content)
+		if headers[:content_type].charset
+			content.force_encoding headers['Content-Type'].charset rescue nil
+		end
 
-                if matches = headers['Content-Disposition'].match(/filename="(.*?)"/) rescue nil
-                    @name = matches[1]
-                end
+		if headers[:content_transfer_encoding] == 'base64'
+			content = Base64.decode64(content)
+		end
 
-                @headers = headers
-                @content = content
-            end
+		if matches = headers[:content_disposition].match(/filename="(.*?)"/) rescue nil
+			@name = matches[1]
+		end
 
-            def to_s
-                @content
-            end
+		@headers = headers
+		@content = content
+	end
 
-            def inspect
-                "#<File:#{self.name}>"
-            end
-        end
-    end
+	def to_s
+		@content
+	end
+
+	alias to_str to_s
+
+	def inspect
+		"#<File:#{name}>"
+	end
 end
+
+end; end

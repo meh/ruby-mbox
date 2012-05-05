@@ -17,77 +17,62 @@
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 #++
 
-require 'base64'
-
 require 'mbox/mail/file'
 
-class Mbox
-    class Mail
-        class Content < Array
-            attr_reader :headers, :attachments
+class Mbox; class Mail
 
-            def initialize (headers, content=[], attachments=[])
-                @headers     = headers
-                @attachments = attachments
+class Content < Array
+	attr_reader :headers, :attachments
 
-                self.insert(-1, *content)
-            end
+	def initialize (headers, content = [], attachments = [])
+		@headers     = headers
+		@attachments = attachments
 
-            def parse (text, headers={})
-                tmp = self.headers.clone
-                tmp.merge!(headers)
+		push *content
+	end
 
-                headers = tmp
-                headers.normalize
+	def parse (text, hdrs = {})
+		headers = headers.merge(hdrs)
+		type    = headers[:content_type]
 
-                type = headers['Content-Type']
+		if matches = type.mime.match(%r{multipart/(\w+)})
+			text.sub(/^.*?--#{type.boundary}\n/m, '').sub(/--#{type.boundary}--$/m, '').split("--#{type.boundary}\n").each {|part|
+				stream = StringIO.new(part)
 
-                if matches = type.mime.match(%r{multipart/(\w+)})
-                    text.sub(/^.*?--#{type.boundary}\n/m, '').sub(/--#{type.boundary}--$/m, '').split("--#{type.boundary}\n").each {|part|
-                        stream = StringIO.new(part)
+				headers = ''
+				until stream.eof? || (line = stream.readline).chomp.empty?
+					headers << line
+				end
+				headers = Headers.parse(headers)
 
-                        headers = ''
-                        while !stream.eof? && !(line = stream.readline).chomp.empty?
-                            headers << line
-                        end
-                        headers = Headers.new.parse(headers)
+				content = !stream.eof? ? stream.readline : ''
+				until stream.eof? || line = stream.readline
+					content << line
+				end
+				content.chomp!
 
-                        content = !stream.eof? ? stream.readline : ''
-                        while !stream.eof? && line = stream.readline
-                            content << line
-                        end
-                        content.chomp!
+				file = File.new(headers, content)
 
-                        file = File.new(headers, content)
+				if (headers[:content_disposition] || '').match(/^attachment/)
+					attachments << file
+				else
+					self << file
+				end
+			}
+		else
+			stream = StringIO.new(text)
 
-                        if (headers['Content-Disposition'] || '').match(/^attachment/)
-                            self.attachments << file
-                        else
-                            self << file
-                        end
-                    }
-                else
-                    stream = StringIO.new(text)
+			content = (!stream.eof?) ? stream.readline : ''
+			until stream.eof? || line = stream.readline
+				content << line
+			end
+			content.chomp!
 
-                    content = (!stream.eof?) ? stream.readline : ''
-                    while !stream.eof? && line = stream.readline
-                        content << line
-                    end
-                    content.chomp!
+			self << File.new(Headers.new, content)
+		end
 
-                    self << File.new(Headers.new, content)
-                end
-
-                return self
-            end
-
-            def normalize
-            end
-
-            def to_s
-                if matches = type.mime.match(%r{multipart/(\w+)})
-                end
-            end
-        end
-    end
+		self
+	end
 end
+
+end; end

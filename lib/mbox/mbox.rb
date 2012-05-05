@@ -17,118 +17,101 @@
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 #++
 
-require 'forwardable'
+require 'stringio'
 
 require 'mbox/mail'
 
 class Mbox
-    # Open a mbox by its name and the directory where the mbox is.
-    def self.open (name, box, options={})
-        mbox      = Mbox.new(File.new("#{box}/#{name}", 'r'), options)
-        mbox.name = name
+	def self.open (path, options = {})
+		Mbox.new(File.new(path, 'r'), options).tap {|mbox|
+			mbox.name = File.basename(name)
+		}
+	end
 
-        return mbox
-    end
+	include Enumerable
 
-    extend Forwardable
+	attr_reader   :options
+	attr_accessor :name
 
-    attr_accessor :name, :at
+	def initialize (what, options = {})
+		@input = if what.respond_to? :to_io
+			what.to_io
+		elsif what.is_a? String
+			StringIO.new(what)
+		else
+			raise ArgumentError, 'I do not know what to do.'
+		end
 
-    # Create a mbox from a File or String object
-    def initialize (what, options={})
-        @internal = []
+		@options = { separator: /^From [^\s]+ .{24}/ }.merge(options)
+	end
 
-        if what.is_a?(File)
-            @stream = what.reopen(what, 'r+:ASCII-8BIT')
-            @name   = File.basename(what.path)
-        elsif what.is_a?(String)
-            @stream = StringIO.new(what, 'r+:ASCII-8BIT')
-        else
-            raise Error.new 'I do not know what to do.'
-        end
+	def each (opts = {})
+		until @input.eof?
+			seek 1, IO::SEEK_CUR
 
-        if options[:parse] != false
-            self.parse(options)
-        end
-    end
+			yield Mail.parse(@input, options.merge(opts))
+		end
+	end
 
-    # Parse the mbox.
-    #
-    # The whole stream gets read, so bigger the mbox slower the process, you can use some
-    # stuff even if you don't parse the whole mbox.
-    #
-    # When parsed most Array methods gets forwarded to the Mbox instance.
-    def parse (options={})
-        if @parsed
-            return false
-        end
+	def [] (index, opts = {})
+		seek index
 
-        @parsed = true
-        counter = 0
+		if @input.eof?
+			raise IndexError, "#{index} is out of range"
+		end
 
-        while true
-            if @internal[counter]
-                Mail.seek(@stream, 1, IO::SEEK_CUR)
-                next
-            end
+		Mail.parse(@input, options.merge(opts))
+	end
 
-            if mail = Mail.parse(@stream, options)
-              @internal[counter]  = mail
-              counter            += 1
-            end
+	def seek (to, whence = IO::SEEK_SET)
+		if whence == IO::SEEK_SET
+			@input.seek(0)
+		end
 
-            if @stream.eof?
-                break
-            end
-        end
+		last   = ''
+		index  = -1
 
-        @internal.compact!
+		while line = @input.readline rescue nil
+			if line.match(options[:separator]) && last.chomp.empty?
+				index += 1
 
-        @at = Time.now
+				if index >= to
+					@input.seek(-line.length, IO::SEEK_CUR)
 
-        Mbox.def_delegators :@internal, :[], :each, :length, :size, :first, :last, :all?, :any?, :chunk, :collect, :count, :cycle, :detect, :entries, :find, :find_all, :grep, :group_by, :include?, :map, :max, :max_by, :member?, :min, :min_by, :none?, :one?, :reject, :reverse_each, :select, :sort, :sort_by, :take, :to_a, :zip
+					break
+				end
+			end
 
-        return true
-    end
+			last = line
+		end
 
-    # Access the Mail in that position without parsing everything.
-    def [] (index, options={})
-        if @internal[index]
-            return @internal[index]
-        end
+		self
+	end
 
-        Mail.seek(@stream, index)
+	def length
+		@input.seek(0)
 
-        @internal[index] = Mail.parse(@stream)
-    end
+		last   = ''
+		length = 0
 
-    # Count the number of emails in the inbox without parsing everything.
-    def length
-        if @count
-            return @count
-        end
+		while line = @input.readline rescue nil
+			if line.match(options[:separator]) && last.chomp.empty?
+				length += 1
+			end
 
-        @stream.seek(0)
+			last = line
+		end
 
-        @count = Mail.count(@stream)
-    end
+		length
+	end
 
-    alias size length
+	alias size length
 
-    # Returns true if some emails are unread. 
-    def has_unread?
-        self.parse
+	def has_unread?
+		any? &:unread?
+	end
 
-        self.each {|mail|
-            if !mail.headers['Status'].read
-                return true
-            end
-        }
-
-        return false
-    end
-
-    def inspect # :nodoc:
-        "#<Mbox:#{@name} length=#{self.length}>"
-    end
+	def inspect # :nodoc:
+		"#<Mbox:#{name} length=#{length}>"
+	end
 end

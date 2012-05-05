@@ -22,160 +22,105 @@ require 'mbox/mail/headers'
 require 'mbox/mail/content'
 
 class Mbox
-    class Mail
-        # Parse an email and get meta attributes, headers and content.
-        def self.parse (stream, options={})
-            if stream.eof?
-                return nil
-            end
 
-            last = {
-                :line => '',
-                :stuff => ''
-            }
+class Mail
+	def self.parse (input, options = {})
+		metadata = Mbox::Mail::Metadata.new
+		headers  = Mbox::Mail::Headers.new
+		content  = Mbox::Mail::Content.new(headers)
 
-            meta    = Mbox::Mail::Meta.new
-            headers = Mbox::Mail::Headers.new
-            content = Mbox::Mail::Content.new(headers)
+		inside = {
+			meta:    true,
+			headers: false,
+			content: false
+		}
 
-            inside = {
-                :meta    => true,
-                :headers => false,
-                :content => false
-            }
+		last = {
+			line:  '',
+			stuff: ''
+		}
 
-            line = stream.readline
+		line = input.readline until input.eof? || line.match(options[:separator])
 
-            if !stream.eof? && !line.match(/^From [^\s]+ .{24}/)
-                while !stream.eof? && !(line = stream.readline).match(/^From [^\s]+ .{24}/)
-                end
-            end
+		return if line.empty?
 
-            meta.from << line
+		metadata.parse_from line
 
-            if line.empty?
-              return
-            end
+		until input.eof? || ((line = input.readline).match(options[:separator]) && last[:line].empty?)
+			if inside[:meta]
+				if line.match(/^>+/)
+					meta.parse_from line
+				else
+					inside[:meta]    = false
+					inside[:headers] = true
 
-            while !stream.eof? && !((line = stream.readline).match(/^From [^\s]+ .{24}/) && last[:line].empty?)
-                if inside[:meta]
-                    if line.match(/^>+/)
-                        meta.from << line
-                    else
-                        inside[:meta]    = false
-                        inside[:headers] = true
+					last[:line] = line.chomp
 
-                        last[:line] = line.chomp
-                        next
-                    end
-                elsif inside[:headers]
-                    if line.strip.empty?
-                        inside[:headers] = false
-                        inside[:content] = true
+					next
+				end
+			elsif inside[:headers]
+				if line.strip.empty?
+					inside[:headers] = false
+					inside[:content] = true
 
-                        headers.parse(last[:stuff])
+					headers.parse(last[:stuff])
 
-                        last[:line]  = line.chomp
-                        last[:stuff] = ''
-                        next
-                    end
+					last[:line]  = line.chomp
+					last[:stuff] = ''
 
-                    last[:stuff] << line
-                elsif inside[:content]
-                    if options[:headersOnly]
-                        last[:line] = line.chomp
-                        next
-                    end
+					next
+				end
 
-                    last[:stuff] << line
-                end
+				last[:stuff] << line
+			elsif inside[:content]
+				if options[:headers_only]
+					last[:line] = line.chomp
 
-                last[:line] = line.chomp
-            end
+					next
+				end
 
-            if !last[:stuff].empty?
-                content.parse(last[:stuff])
-            end
+				last[:stuff] << line
+			end
 
-            if !stream.eof? && line
-                stream.seek(-line.length, IO::SEEK_CUR)
-            end
+			last[:line] = line.chomp
+		end
 
-            return Mail.new(meta, headers, content)
-        end
+		unless last[:stuff].empty?
+			content.parse(last[:stuff])
+		end
 
-        # Seek to the given email in the stream.
-        def self.seek (stream, to, whence=IO::SEEK_SET)
-            if whence == IO::SEEK_SET
-                stream.seek(0)
-            end
+		if !input.eof? && line
+			input.seek(-line.length, IO::SEEK_CUR)
+		end
 
-            last   = ''
-            index  = -1
-            
-            while line = stream.readline rescue nil
-                if line.match(/^From [^\s]+ .{24}/) && last.chomp.empty?
-                    index += 1
+		Mail.new(meta, headers, content)
+	end
 
-                    if index >= to
-                        stream.seek(-line.length, IO::SEEK_CUR)
-                        break
-                    end
-                end
+	attr_reader :meta, :headers, :content
 
-                last = line
-            end
-        end
+	def initialize (meta, headers, content)
+		@meta    = meta
+		@headers = headers
+		@content = content
+	end
 
-        # Count the emails in the stream.
-        def self.count (stream)
-            last   = ''
-            length = 0
-            
-            while line = stream.readline rescue nil
-                if line.match(/^From [^\s]+ .{24}/) && last.chomp.empty?
-                    length += 1
-                end
+	def save_to (path)
+		File.open(path, 'w') {|f|
+			f.write to_s
+		}
+	end
 
-                last = line
-            end
+	def unread?
+		!headers[:status].read rescue true
+	end
 
-            return length
-        end
+	def to_s
+		"#{headers}\n#{content}"
+	end
 
-        attr_reader :meta, :headers, :content
+	def inspect
+		"#<Mail:#{headers['From']}>"
+	end
+end
 
-        private
-        
-        def initialize (meta, headers, content) # :nodoc:
-            @meta    = meta
-            @headers = headers
-            @content = content
-
-            @meta.normalize
-            @headers.normalize
-            @content.normalize
-        end
-
-        public
-
-        def save (path)
-            file = File.new(path, 'w')
-            file.write(self.to_s)
-            file.close
-        end
-
-        # True if the email is unread, false otherwise.
-        def unread?
-            !self.headers['Status'].read rescue true
-        end
-
-        def to_s
-            "#{self.headers}\n#{self.content}"
-        end
-
-        def inspect # :nodoc:
-            "#<Mail:#{self.headers['From']}>"
-        end
-    end
 end

@@ -19,27 +19,37 @@
 
 class Mbox; class Mail; class Headers
 
-class Status
+class ContentType
 	def self.parse (text)
-		return text if text.is_a?(self)
+		return text if text.is_a?(ContentType)
 
-		return Status.new unless text && text.is_a?(String)
+		return ContentType.new unless text && text.is_a?(String)
 
-		Status.new(text.include?('R'), text.include?('O'))
+		stuff = text.gsub(/\n\r/, '').split(/\s*;\s*/)
+		type  = stuff.shift
+
+		ContentType.new(Hash[stuff.map {|stuff|
+			stuff    = stuff.strip.split(/=/)
+			stuff[0] = stuff[0].to_sym
+
+			if stuff[1][0] == '"' && stuff[1][stuff[1].length-1] == '"'
+				stuff[1] = stuff[1][1, stuff[1].length-2]
+			end
+
+			stuff
+		}].merge(mime: type))
 	end
 
-	def initialize (read = false, old = false)
-		@read = read
-		@old  = old
+	attr_accessor :mime, :charset, :boundary
+
+	def initialize (data = {})
+		@mime     = data[:mime] || 'text/plain'
+		@charset  = data[:charset]
+		@boundary = data[:boundary]
 	end
-
-	def read?; @read; end
-	def old?;  @old;  end
-
-	def unread?; !read?; end
 
 	def to_s
-		"#{'R' if read?}#{'O' if old?}"
+		"#{mime}#{"; charset=#{charset}" if charset}#{"; boundary=#{boundary}" if boundary}"
 	end
 end
 

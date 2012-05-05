@@ -22,92 +22,92 @@ require 'stringio'
 require 'mbox/mail/headers/status'
 require 'mbox/mail/headers/contenttype'
 
-class Mbox
-    class Mail
-        # Representation of email headers.
-        class Headers < Hash
-            # Create a Headers object with starting passed headers.
-            def initialize (headers={})
-                self.merge!(headers)
-            end
+class Mbox; class Mail
 
-            def parse (text)
-                stream = StringIO.new(text)
-                last   = nil
+class Headers
+	def self.normalize_name (name)
+		return name if name.is_a? Symbol
 
-                while !stream.eof? && !(line = stream.readline).chomp.empty?
-                    if !line.match(/^\s/)
-                        matches = line.match(/^([^:]*):\s*(.*)$/)
+		name.to_s.downcase.gsub('-', '_').to_sym
+	end
 
-                        if !matches
-                            next
-                        end
+	def self.parse (input)
+		new.parse(input)
+	end
 
-                        name  = matches[1]
-                        value = matches[2]
+	def initialize (start = {})
+		@data = {}
 
-                        if self[name]
-                            if self[name].is_a?(String)
-                                self[name] = [self[name]]
-                            end
+		start.each {|name, value|
+			self[name] = value
+		}
+	end
 
-                            if self[name].is_a?(Array)
-                                self[name] << value
-                            end
-                        else
-                            self[name] = value
-                        end
+	def [] (name)
+		@data[Headers.normalize_name(name)]
+	end
 
-                        last = name
-                    else
-                        if self[last]
-                            if self[last].is_a?(String)
-                                self[last] << " #{line}"
-                            elsif self[last].is_a?(Array)
-                                self[last].last << " #{line}"
-                            end
-                        end
-                    end
-                end
+	def []= (name, value)
+		name = Headers.normalize_name(name)
 
-                self.normalize
+		value = case name
+			when :status       then Status.parse(value)
+			when :content_type then ContentType.parse(value)
+		end
 
-                return self
-            end
+		if tmp = @data[name] && !tmp.is_a?(Array)
+			@data[name] = [tmp]
+		end
 
-            # Apply normalization to headers.
-            #
-            # Transforms the Status header to a Status object.
-            # Transforms the Content-Type header to a ContentType object.
-            def normalize
-                if !self['Status'].is_a?(Status)
-                    if !self['Status'] || !self['Status'].is_a?(String)
-                        self['Status'] = Status.new(false, false)
-                    else
-                        self['Status'] = Status.new(self['Status'].include?('R'), self['Status'].include?('O'))
-                    end
-                end
+		@data[name] << value
+	end
 
-                if !self['Content-Type'].is_a?(ContentType)
-                    if !self['Content-Type'] || !self['Content-Type'].is_a?(String)
-                        self['Content-Type'] = ContentType.new
-                    else
-                        self['Content-Type'] = ContentType.parse(self['Content-Type'])
-                    end
-                end
-            end
+	def delete (name)
+		@data.delete(Headers.normalize_name(name))
+	end
 
-            def to_s
-                result = ''
+	def parse (input)
+		input = if input.respond_to? :to_io
+			input.to_io
+		elsif input.is_a? String
+			StringIO.new(input)
+		else
+			raise ArgumentError, 'I do not know what to do.'
+		end
 
-                self.each {|name, values|
-                    [values].flatten.each {|value|
-                        result << "#{name}: #{value}\n"
-                    }
-                }
+		last = nil
 
-                return result
-            end
-        end
+		until input.eof? || (line = input.readline).chomp.empty?
+			if !line.match(/^\s/)
+				next unless matches = line.match(/^([^:]*):\s*(.*)$/)
+
+				whole, name, value = matches
+
+				self[name] = value
+				last       = name
+			elsif self[last]
+				if self[last].is_a?(String)
+					self[last] << " #{line}"
+				elsif self[last].is_a?(Array)
+					self[last].last << " #{line}"
+				end
+			end
+		end
+
+		self
+	end
+
+	def to_s
+		result = ''
+
+		each {|name, values|
+			[values].flatten.each {|value|
+				result << "#{name}: #{value}\n"
+			}
+		}
+
+		result
+	end
+end
     end
 end
