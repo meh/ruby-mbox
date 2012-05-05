@@ -46,10 +46,8 @@ class Mbox
 	end
 
 	def each (opts = {})
-		until @input.eof?
-			seek 1, IO::SEEK_CUR
-
-			yield Mail.parse(@input, options.merge(opts))
+		while mail = Mail.parse(@input, options.merge(opts))
+			yield mail
 		end
 	end
 

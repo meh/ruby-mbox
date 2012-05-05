@@ -2,10 +2,9 @@
 require 'mbox'
 
 if ARGV.length < 1
-    puts "You have to pass the mbox."
-    exit 1
+	puts 'You have to pass the mbox.'
+
+	exit 1
 end
 
-mbox = Mbox.new(File.new(ARGV.shift))
-
-puts mbox.length
+puts Mbox.open(ARGV.shift).length

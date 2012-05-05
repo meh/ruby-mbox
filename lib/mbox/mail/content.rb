@@ -31,8 +31,8 @@ class Content < Array
 		push *content
 	end
 
-	def parse (text, hdrs = {})
-		headers = headers.merge(hdrs)
+	def parse (text, headers = {})
+		headers = @headers.merge(headers)
 		type    = headers[:content_type]
 
 		if matches = type.mime.match(%r{multipart/(\w+)})

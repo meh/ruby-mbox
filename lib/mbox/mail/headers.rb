@@ -20,50 +20,83 @@
 require 'stringio'
 
 require 'mbox/mail/headers/status'
-require 'mbox/mail/headers/contenttype'
+require 'mbox/mail/headers/content_type'
 
 class Mbox; class Mail
 
 class Headers
-	def self.normalize_name (name)
+	def self.name_to_symbol (name)
 		return name if name.is_a? Symbol
 
-		name.to_s.downcase.gsub('-', '_').to_sym
+		name = name.to_s.downcase.gsub('-', '_').to_sym
+
+		if name.empty?
+			raise ArgumentError, 'cannot pass empty name'
+		end
+
+		name
+	end
+
+	def self.symbol_to_name (name)
+		name.to_s.downcase.gsub('_', '-').gsub(/(\A|-)(.)/) {|match|
+			match.upcase
+		}
 	end
 
 	def self.parse (input)
 		new.parse(input)
 	end
 
+	include Enumerable
+
 	def initialize (start = {})
 		@data = {}
 
-		start.each {|name, value|
-			self[name] = value
-		}
+		merge! start
+	end
+
+	def each (&block)
+		@data.each(&block)
 	end
 
 	def [] (name)
-		@data[Headers.normalize_name(name)]
+		@data[Headers.name_to_symbol(name)]
 	end
 
 	def []= (name, value)
-		name = Headers.normalize_name(name)
+		name = Headers.name_to_symbol(name)
 
 		value = case name
 			when :status       then Status.parse(value)
 			when :content_type then ContentType.parse(value)
+			else                    value
 		end
 
 		if tmp = @data[name] && !tmp.is_a?(Array)
 			@data[name] = [tmp]
 		end
 
-		@data[name] << value
+		if @data[name].is_a?(Array)
+			@data[name] << value
+		else
+			@data[name] = value
+		end
 	end
 
 	def delete (name)
-		@data.delete(Headers.normalize_name(name))
+		@data.delete(Headers.name_to_symbol(name))
+	end
+
+	def merge! (other)
+		other.each {|name, value|
+			self[name] = value
+		}
+
+		self
+	end
+
+	def merge (other)
+		clone.merge!(other)
 	end
 
 	def parse (input)
@@ -79,9 +112,9 @@ class Headers
 
 		until input.eof? || (line = input.readline).chomp.empty?
 			if !line.match(/^\s/)
-				next unless matches = line.match(/^([^:]*):\s*(.*)$/)
+				next unless matches = line.match(/^([^:]+):\s*(.+)$/)
 
-				whole, name, value = matches
+				whole, name, value = matches.to_a
 
 				self[name] = value
 				last       = name
@@ -102,7 +135,7 @@ class Headers
 
 		each {|name, values|
 			[values].flatten.each {|value|
-				result << "#{name}: #{value}\n"
+				result << "#{Headers.symbol_to_name(name)}: #{value}\n"
 			}
 		}
 

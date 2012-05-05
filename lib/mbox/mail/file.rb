@@ -25,8 +25,8 @@ class File
 	attr_reader :name, :headers, :content
 
 	def initialize (headers, content)
-		if headers[:content_type].charset
-			content.force_encoding headers['Content-Type'].charset rescue nil
+		if headers[:content_type]
+			content.force_encoding headers[:content_type].charset
 		end
 
 		if headers[:content_transfer_encoding] == 'base64'

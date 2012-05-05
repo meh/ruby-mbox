@@ -17,7 +17,7 @@
 # along with ruby-mbox. If not, see <http://www.gnu.org/licenses/>.
 #++
 
-require 'mbox/mail/meta'
+require 'mbox/mail/metadata'
 require 'mbox/mail/headers'
 require 'mbox/mail/content'
 
@@ -30,9 +30,9 @@ class Mail
 		content  = Mbox::Mail::Content.new(headers)
 
 		inside = {
-			meta:    true,
-			headers: false,
-			content: false
+			metadata: true,
+			headers:  false,
+			content:  false
 		}
 
 		last = {
@@ -40,18 +40,20 @@ class Mail
 			stuff: ''
 		}
 
-		line = input.readline until input.eof? || line.match(options[:separator])
+		until input.eof? || (line = input.readline).match(options[:separator])
+			next
+		end
 
-		return if line.empty?
+		return if !line || line.empty?
 
 		metadata.parse_from line
 
 		until input.eof? || ((line = input.readline).match(options[:separator]) && last[:line].empty?)
-			if inside[:meta]
+			if inside[:metadata]
 				if line.match(/^>+/)
-					meta.parse_from line
+					metadata.parse_from line
 				else
-					inside[:meta]    = false
+					inside[:metadata]    = false
 					inside[:headers] = true
 
 					last[:line] = line.chomp
@@ -93,15 +95,15 @@ class Mail
 			input.seek(-line.length, IO::SEEK_CUR)
 		end
 
-		Mail.new(meta, headers, content)
+		Mail.new(metadata, headers, content)
 	end
 
-	attr_reader :meta, :headers, :content
+	attr_reader :metadata, :headers, :content
 
-	def initialize (meta, headers, content)
-		@meta    = meta
-		@headers = headers
-		@content = content
+	def initialize (metadata, headers, content)
+		@metadata = metadata
+		@headers  = headers
+		@content  = content
 	end
 
 	def save_to (path)
