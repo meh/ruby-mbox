@@ -109,7 +109,7 @@ class Mbox
 		any? &:unread?
 	end
 
-	def inspect # :nodoc:
+	def inspect
 		"#<Mbox:#{name} length=#{length}>"
 	end
 end
