@@ -40,9 +40,7 @@ class Mail
 			stuff: ''
 		}
 
-		until input.eof? || (line = input.readline).match(options[:separator])
-			next
-		end
+		next until input.eof? || (line = input.readline).match(options[:separator])
 
 		return if !line || line.empty?
 
@@ -113,7 +111,7 @@ class Mail
 	end
 
 	def unread?
-		!headers[:status].read rescue true
+		!headers[:status].read? rescue true
 	end
 
 	def to_s

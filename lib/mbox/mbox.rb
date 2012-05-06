@@ -23,15 +23,24 @@ require 'mbox/mail'
 
 class Mbox
 	def self.open (path, options = {})
-		Mbox.new(File.new(path, 'r'), options).tap {|mbox|
+		input = File.open(path, 'r')
+
+		Mbox.new(input, options).tap {|mbox|
+			mbox.path = path
 			mbox.name = File.basename(name)
+
+			ObjectSpace.define_finalizer mbox, finalizer(input)
 		}
+	end
+
+	def self.finalizer (io)
+		proc { io.close }
 	end
 
 	include Enumerable
 
 	attr_reader   :options
-	attr_accessor :name
+	attr_accessor :name, :path
 
 	def initialize (what, options = {})
 		@input = if what.respond_to? :to_io
@@ -46,6 +55,8 @@ class Mbox
 	end
 
 	def each (opts = {})
+		@input.seek 0
+
 		while mail = Mail.parse(@input, options.merge(opts))
 			yield mail
 		end
@@ -63,7 +74,7 @@ class Mbox
 
 	def seek (to, whence = IO::SEEK_SET)
 		if whence == IO::SEEK_SET
-			@input.seek(0)
+			@input.seek 0
 		end
 
 		last   = ''
@@ -106,7 +117,11 @@ class Mbox
 	alias size length
 
 	def has_unread?
-		any? &:unread?
+		each headers_only: true do |mail|
+			return true if mail.unread?
+		end
+
+		false
 	end
 
 	def inspect
