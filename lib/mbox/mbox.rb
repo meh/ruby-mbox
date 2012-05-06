@@ -31,7 +31,11 @@ class Mbox
 
 			ObjectSpace.define_finalizer mbox, finalizer(input)
 
-			yield mbox if block_given?
+			if block_given?
+				yield mbox
+
+				mbox.close
+			end
 		}
 	end
 
@@ -54,6 +58,10 @@ class Mbox
 		end
 
 		@options = { separator: /^From [^\s]+ .{24}/ }.merge(options)
+	end
+
+	def close
+		@input.close
 	end
 
 	def each (opts = {})
