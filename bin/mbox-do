@@ -1,29 +1,38 @@
 #! /usr/bin/env ruby
 require 'socket'
 require 'json'
+require 'optparse'
 
-HOST = 'localhost'
-PORT = 9001
+options = {}
 
-target = '*'
+OptionParser.new do |o|
+	options[:host]   = 'localhost'
+	options[:port]   = 9001
+	options[:target] = '*'
 
-if ARGV.first == '-t'
-    ARGV.shift
-    target = ARGV.shift
-end
+	o.on '-h', '--host HOST', 'the host to connect to' do |value|
+		options[:host] = value
+	end
 
-socket = TCPSocket.new(HOST, PORT) rescue exit(1)
+	o.on '-p', '--port PORT', 'the port to connect to' do |value|
+		options[:port] = value.to_i
+	end
 
-case ARGV.shift
+	o.on '-t', '--target TARGET', 'the mailboxes to query' do |value|
+		options[:target] = value
+	end
+end.parse!
 
-when 'list'
-    case ARGV.shift
-    
-    when 'unread'
-        socket.puts("#{target} list unread")
+socket  = TCPSocket.new(options[:host], options[:port]) rescue abort('could not connect')
+command = ARGV.shift
 
-        puts JSON::parse(socket.gets).join("\n")
-    end
+if command == 'list'
+	command = ARGV.shift
+
+	if command == 'unread'
+		socket.puts("#{options[:target]} list unread")
+		puts JSON.parse(socket.gets).join("\n")
+	end
 end
 
 socket.close
