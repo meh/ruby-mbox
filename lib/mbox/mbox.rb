@@ -23,7 +23,7 @@ require 'mbox/mail'
 
 class Mbox
 	def self.open (path, options = {})
-		input = File.open(path, 'r+:ASCII-8BIT')
+		input = File.open(File.expand_path(path), 'r+:ASCII-8BIT')
 
 		Mbox.new(input, options).tap {|mbox|
 			mbox.path = path
