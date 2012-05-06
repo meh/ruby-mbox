@@ -29,12 +29,12 @@ class Mbox
 			mbox.path = path
 			mbox.name = File.basename(path)
 
-			ObjectSpace.define_finalizer mbox, finalizer(input)
-
 			if block_given?
 				yield mbox
 
 				mbox.close
+			else
+				ObjectSpace.define_finalizer mbox, finalizer(input)
 			end
 		}
 	end
