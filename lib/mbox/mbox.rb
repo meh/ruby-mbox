@@ -25,11 +25,13 @@ class Mbox
 	def self.open (path, options = {})
 		input = File.open(path, 'r')
 
-		Mbox.new(input, options).tap {|mbox|
+		Mbox.new(File.open(path, 'r'), options).tap {|mbox|
 			mbox.path = path
 			mbox.name = File.basename(name)
 
 			ObjectSpace.define_finalizer mbox, finalizer(input)
+
+			yield mbox if block_given?
 		}
 	end
 
