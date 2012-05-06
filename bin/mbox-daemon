@@ -57,7 +57,7 @@ class Connection < EventMachine::Protocols::LineAndTextProtocol
 
 			if command == 'unread'
 				send_response boxes.select { |box|
-					if @@unread[box] && @@unread[box].last_check < File.mtime(box.path)
+					if @@unread[box] && @@unread[box].last_check < [File.ctime(box.path), File.mtime(box.path)].max
 						@@unread[box] = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
 					else
 						@@unread[box] ||= Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
