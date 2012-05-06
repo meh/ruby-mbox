@@ -86,6 +86,6 @@ EM.run {
 	end
 
 	EM.add_periodic_timer options[:every] do
-		`fetchmail`
+		EM.system 'fetchmail'
 	end
 }
