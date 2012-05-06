@@ -23,11 +23,11 @@ require 'mbox/mail'
 
 class Mbox
 	def self.open (path, options = {})
-		input = File.open(path, 'r')
+		input = File.open(path, 'r+:ASCII-8BIT')
 
-		Mbox.new(File.open(path, 'r'), options).tap {|mbox|
+		Mbox.new(input, options).tap {|mbox|
 			mbox.path = path
-			mbox.name = File.basename(name)
+			mbox.name = File.basename(path)
 
 			ObjectSpace.define_finalizer mbox, finalizer(input)
 
