@@ -1,82 +1,91 @@
 #! /usr/bin/env ruby
-require 'thread'
-require 'socket'
+require 'optparse'
 require 'json'
-
+require 'eventmachine'
 require 'mbox'
 
-LISTEN = '127.0.0.1'
-PORT   = 9001
+options = {}
 
-MAILDIR   = ENV['MBOX_DAEMON_DIR'] || "#{ENV['HOME']}/mail"
-MAILBOXES = (ENV['MBOX_DAEMON_BOXES'] || 'inbox').split(/\s*[;,]\s*/)
-EVERY     = (ENV['MBOX_DAEMON_EVERY'] || 120).to_i
+OptionParser.new do |o|
+	options[:host]  = 'localhost'
+	options[:port]  = 9001
+	options[:every] = (ENV['MBOX_DAEMON_EVERY'] || 120).to_f
+	options[:mail]  = {
+		directory: ENV['MBOX_DAEMON_DIR'] || "#{ENV['HOME']}/mail",
+		boxes:     (ENV['MBOX_DAEMON_BOXES'] || 'inbox').split(/\s*[;,]\s*/)
+	}
 
-DATA = {
-  :mboxes => {}
+	o.on '-h', '--host HOST', 'the host to bind to' do |value|
+		options[:host] = value
+	end
+
+	o.on '-p', '--port PORT', 'the port to bind to' do |value|
+		options[:port] = value.to_i
+	end
+
+	o.on '-e', '--every SECONDS', 'the seconds to check the email every' do |value|
+		options[:every] = value.to_f
+	end
+
+	o.on '-m', '--mail-directory PATH', 'the path where the mailboxes are at' do |value|
+		options[:mail][:directory] = File.realpath(File.expand_path(value))
+	end
+
+	o.on '-b', '--mail-boxes BOX...', Array, 'the mailboxes to check' do |value|
+		options[:mail][:boxes].push(*value)
+	end
+end.parse!
+
+%w[INT KILL].each {|sig|
+	trap sig do
+		EM.stop_event_loop
+	end
 }
 
-Thread.new {
-  server = TCPServer.new(LISTEN, PORT)
+class Connection < EventMachine::Protocols::LineAndTextProtocol
+	@@unread = {}
 
-  while socket = server.accept
-    Thread.new {
-      command = socket.readline
+	attr_accessor :boxes
 
-      if !(matches = command.match(/^(\w+|\*)\s*(\w+)\s*(.*)$/))
-        socket.close
-        next
-      end
+	def receive_line (line)
+		whole, target, command, rest = line.match(/^(.*?)\s+(.*?)(?:\s+(.+))?$/).to_a
 
-      target  = matches[1]
-      command = matches[2]
-      rest    = matches[3]
+		boxes = target == '*' ? @boxes : @boxes.select { |box| target.include? box.name }
 
-      begin
-        case command
+		if command == 'list'
+			command = rest
 
-        when 'list'
-          command = rest
+			if command == 'unread'
+				send_response boxes.select { |box|
+					if @@unread[box] && @@unread[box].last_check < File.mtime(box.path)
+						@@unread[box] = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
+					else
+						@@unread[box] ||= Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
+					end
 
-          if target == '*'
-            case command
+					@@unread[box].status
+				}.map(&:name)
+			end
+		end
+	rescue Exception => e
+		send_data %{{"error":#{e.to_s.inspect}}}
+	end
 
-            when 'unread'
-              socket.puts(DATA[:mboxes].map {|mbox|
-                mbox[0] if mbox[1].has_unread?
-              }.compact.to_json)
-            end
-          else
-
-          end
-
-        end
-      rescue Exception => e
-        socket.puts %{{"error":#{$!.to-s.inspect}}}
-      end
-
-      socket.close
-    }
-  end
-}
-
-last = Time.now - EVERY - 1
-
-loop do
-  if (last + EVERY) < Time.now
-    `fetchmail`
-    last = Time.now
-  end
-
-  sleep 3
-
-  MAILBOXES.each {|mailbox|
-    if mbox = DATA[:mboxes][mailbox]
-      if mbox.at > [File.ctime("#{MAILDIR}/#{mailbox}"), File.mtime("#{MAILDIR}/#{mailbox}")].max
-        next
-      end
-    end
-
-    DATA[:mboxes][mailbox] = Mbox.open(mailbox, MAILDIR, { :headersOnly => true })
-  }
+	def send_response (data)
+		send_data "#{data.to_json}\n"
+	end
 end
+
+EM.run {
+	boxes = options[:mail][:boxes].map {|name|
+		Mbox.open("#{options[:mail][:directory]}/#{name}")
+	}
+
+	EM.start_server options[:host], options[:port], Connection do |c|
+		c.boxes = boxes
+	end
+
+	EM.add_periodic_timer options[:every] do
+		`fetchmail`
+	end
+}
