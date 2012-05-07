@@ -43,7 +43,8 @@ end.parse!
 }
 
 class Connection < EventMachine::Protocols::LineAndTextProtocol
-	@@unread = {}
+	@@unread          = {}
+	@@unread_checking = false
 
 	attr_accessor :boxes
 
@@ -57,13 +58,16 @@ class Connection < EventMachine::Protocols::LineAndTextProtocol
 
 			if command == 'unread'
 				send_response boxes.select { |box|
-					if @@unread[box] && @@unread[box].last_check < [File.ctime(box.path), File.mtime(box.path)].max
-						@@unread[box] = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
-					else
-						@@unread[box] ||= Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
+					if !@@unread[box] || @@unread[box].last_check < [File.ctime(box.path), File.mtime(box.path)].max
+						unless @@unread_checking
+							EM.defer {
+								@@unread[box]     = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
+								@@unread_checking = false
+							}
+						end
 					end
 
-					@@unread[box].status
+					@@unread[box].status rescue false
 				}.map(&:name)
 			end
 		end

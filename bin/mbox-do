@@ -34,5 +34,3 @@ if command == 'list'
 		puts JSON.parse(socket.gets).join("\n")
 	end
 end
-
-socket.close
