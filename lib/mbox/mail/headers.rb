@@ -112,7 +112,7 @@ class Headers
 
 		until input.eof? || (line = input.readline).chomp.empty?
 			if !line.match(/^\s/)
-				next unless matches = line.match(/^([^:]+):\s*(.+)$/)
+				next unless matches = line.match(/^([\w\-]+):\s*(.+)$/)
 
 				whole, name, value = matches.to_a
 
