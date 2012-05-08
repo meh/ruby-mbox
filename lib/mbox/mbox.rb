@@ -67,8 +67,16 @@ class Mbox
 	def each (opts = {})
 		@input.seek 0
 
+		if @input.respond_to? :flock
+			@input.flock File::LOCK_SH
+		end
+
 		while mail = Mail.parse(@input, options.merge(opts))
 			yield mail
+		end
+
+		if @input.respond_to? :flock
+			@input.flock File::LOCK_UN
 		end
 	end
 

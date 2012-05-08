@@ -42,32 +42,33 @@ end.parse!
 	end
 }
 
-class Connection < EventMachine::Protocols::LineAndTextProtocol
-	@@unread          = {}
-	@@unread_checking = false
+$unread = {}
 
+class Connection < EventMachine::Protocols::LineAndTextProtocol
 	attr_accessor :boxes
 
 	def receive_line (line)
 		whole, target, command, rest = line.match(/^(.*?)\s+(.*?)(?:\s+(.+))?$/).to_a
 
-		boxes = target == '*' ? @boxes : @boxes.select { |box| target.include? box.name }
+		boxes = target == '*' ? $boxes : $boxes.select { |box| target.include? box.name }
 
 		if command == 'list'
 			command = rest
 
 			if command == 'unread'
 				send_response boxes.select {|box|
-					if !@@unread[box] || @@unread[box].last_check < [File.ctime(box.path), File.mtime(box.path)].max
-						unless @@unread_checking
+					if !$unread[box] || $unread[box].last_check < [File.ctime(box.path), File.mtime(box.path)].max
+						unless $unread[:checking]
+							$unread[:checking] = true
+
 							EM.defer {
-								@@unread[box]     = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
-								@@unread_checking = false
+								$unread[box]       = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
+								$unread[:checking] = false
 							}
 						end
 					end
 
-					@@unread[box].status rescue false
+					$unread[box].status rescue false
 				}.map(&:name)
 			end
 		end
@@ -81,13 +82,11 @@ class Connection < EventMachine::Protocols::LineAndTextProtocol
 end
 
 EM.run {
-	boxes = options[:mail][:boxes].map {|name|
+	$boxes = options[:mail][:boxes].map {|name|
 		Mbox.open("#{options[:mail][:directory]}/#{name}")
 	}
 
-	EM.start_server options[:host], options[:port], Connection do |c|
-		c.boxes = boxes
-	end
+	EM.start_server options[:host], options[:port], Connection
 
 	EM.add_periodic_timer options[:every] do
 		EM.system 'fetchmail'

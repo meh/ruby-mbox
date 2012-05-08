@@ -47,6 +47,8 @@ class Headers
 			to_sym == Name.parse(other).to_sym
 		end
 
+		alias eql? ==
+
 		def hash
 			to_sym.hash
 		end
