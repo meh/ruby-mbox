@@ -18,6 +18,7 @@
 #++
 
 require 'stringio'
+require 'call-me/memoize'
 
 require 'mbox/mail/headers/status'
 require 'mbox/mail/headers/content_type'
@@ -25,22 +26,43 @@ require 'mbox/mail/headers/content_type'
 class Mbox; class Mail
 
 class Headers
-	def self.name_to_symbol (name)
-		return name if name.is_a? Symbol
+	class Name
+		def self.parse (text)
+			return text if text.is_a? self
 
-		name = name.to_s.downcase.gsub('-', '_').to_sym
-
-		if name.empty?
-			raise ArgumentError, 'cannot pass empty name'
+			new(text)
 		end
 
-		name
-	end
+		def initialize (name)
+			name = name.to_s.downcase.gsub('-', '_').to_sym
 
-	def self.symbol_to_name (name)
-		name.to_s.downcase.gsub('_', '-').gsub(/(\A|-)(.)/) {|match|
-			match.upcase
-		}
+			if name.empty?
+				raise ArgumentError, 'cannot pass empty name'
+			end
+
+			@internal = name
+		end
+
+		def == (other)
+			to_sym == Name.parse(other).to_sym
+		end
+
+		def hash
+			to_sym.hash
+		end
+
+		def to_sym
+			@internal
+		end
+
+		memoize
+		def to_s
+			to_sym.to_s.downcase.gsub('_', '-').gsub(/(\A|-)(.)/) {|match|
+				match.upcase
+			}
+		end
+
+		alias to_str to_s
 	end
 
 	def self.parse (input)
@@ -60,16 +82,16 @@ class Headers
 	end
 
 	def [] (name)
-		@data[Headers.name_to_symbol(name)]
+		@data[Name.parse(name)]
 	end
 
 	def []= (name, value)
-		name = Headers.name_to_symbol(name)
+		name = Name.parse(name)
 
-		value = case name
-			when :status       then Status.parse(value)
-			when :content_type then ContentType.parse(value)
-			else                    value
+		if name == :status
+			value = Status.parse(value)
+		elsif name == :content_type
+			value  = ContentType.parse(value)
 		end
 
 		if tmp = @data[name] && !tmp.is_a?(Array)
@@ -121,7 +143,7 @@ class Headers
 			elsif self[last]
 				if self[last].is_a?(String)
 					self[last] << " #{line}"
-				elsif self[last].is_a?(Array)
+				elsif self[last].is_a?(Array) && self[last].last.is_a?(String)
 					self[last].last << " #{line}"
 				end
 			end
@@ -135,12 +157,12 @@ class Headers
 
 		each {|name, values|
 			[values].flatten.each {|value|
-				result << "#{Headers.symbol_to_name(name)}: #{value}\n"
+				result << "#{name}: #{value}\n"
 			}
 		}
 
 		result
 	end
 end
-    end
-end
+
+end; end
