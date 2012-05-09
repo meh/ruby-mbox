@@ -68,6 +68,14 @@ class Mbox
 		if @input.respond_to? :flock
 			@input.flock File::LOCK_SH
 		end
+
+		if block_given?
+			result = yield self
+
+			unlock
+
+			result
+		end
 	end
 
 	def unlock
@@ -79,29 +87,23 @@ class Mbox
 	def each (opts = {})
 		@input.seek 0
 
-		lock
-
-		while mail = Mail.parse(@input, options.merge(opts))
-			yield mail
-		end
-
-		unlock
+		lock {
+			while mail = Mail.parse(@input, options.merge(opts))
+				yield mail
+			end
+		}
 	end
 
 	def [] (index, opts = {})
-		lock
+		lock {
+			seek index
 
-		seek index
+			if @input.eof?
+				raise IndexError, "#{index} is out of range"
+			end
 
-		if @input.eof?
-			raise IndexError, "#{index} is out of range"
-		end
-
-		mail = Mail.parse(@input, options.merge(opts))
-
-		unlock
-
-		mail
+			Mail.parse(@input, options.merge(opts))
+		}
 	end
 
 	def seek (to, whence = IO::SEEK_SET)
@@ -135,17 +137,15 @@ class Mbox
 		last   = ''
 		length = 0
 
-		lock
+		lock {
+			while line = @input.readline rescue nil
+				if line.match(options[:separator]) && last.chomp.empty?
+					length += 1
+				end
 
-		while line = @input.readline rescue nil
-			if line.match(options[:separator]) && last.chomp.empty?
-				length += 1
+				last = line
 			end
-
-			last = line
-		end
-
-		unlock
+		}
 
 		length
 	end
