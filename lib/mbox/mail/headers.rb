@@ -140,13 +140,13 @@ class Headers
 
 				whole, name, value = matches.to_a
 
-				self[name] = value
+				self[name] = value.strip
 				last       = name
 			elsif self[last]
 				if self[last].is_a?(String)
-					self[last] << " #{line}"
+					self[last] << " #{line.strip}"
 				elsif self[last].is_a?(Array) && self[last].last.is_a?(String)
-					self[last].last << " #{line}"
+					self[last].last << " #{line.strip}"
 				end
 			end
 		end

@@ -14,6 +14,9 @@ test
 From ecls-list-bounces@lists.sourceforge.net  Mon Apr  4 02:04:19 2011
 >From meh  Mon Apr  4 02:04:19 2011
 Return-Path: <ecls-list-bounces@lists.sourceforge.net>
+Received: from mail.l.autistici.org [82.94.249.234]
+	by internet with POP3 (fetchmail-6.3.21)
+	for <meh@localhost> (single-drop); Fri, 06 Apr 2012 20:02:25 +0200 (CEST)
 
 whattt
 
@@ -30,6 +33,11 @@ whattt
 
 	it 'parses headers properly' do
 		box[0].headers.length.should == 2
+		box[1].headers.length.should == 2
+	end
+
+	it 'parses multiline headers properly' do
+		box[1].headers[:received].should == 'from mail.l.autistici.org [82.94.249.234] by internet with POP3 (fetchmail-6.3.21) for <meh@localhost> (single-drop); Fri, 06 Apr 2012 20:02:25 +0200 (CEST)'
 	end
 
 	it 'parses the content properly' do
