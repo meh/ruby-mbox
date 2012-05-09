@@ -70,11 +70,11 @@ class Mbox
 		end
 
 		if block_given?
-			result = yield self
-
-			unlock
-
-			result
+			begin
+				yield self
+			ensure
+				unlock
+			end
 		end
 	end
 
