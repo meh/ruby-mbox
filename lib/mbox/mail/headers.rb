@@ -18,6 +18,7 @@
 #++
 
 require 'stringio'
+require 'forwardable'
 require 'call-me/memoize'
 
 require 'mbox/mail/headers/status'
@@ -71,16 +72,15 @@ class Headers
 		new.parse(input)
 	end
 
+	extend  Forwardable
 	include Enumerable
+
+	def_delegators :@data, :each, :length, :size
 
 	def initialize (start = {})
 		@data = {}
 
 		merge! start
-	end
-
-	def each (&block)
-		@data.each(&block)
 	end
 
 	def [] (name)

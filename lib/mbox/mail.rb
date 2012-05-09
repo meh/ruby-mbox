@@ -29,66 +29,39 @@ class Mail
 		headers  = Mbox::Mail::Headers.new
 		content  = Mbox::Mail::Content.new(headers)
 
-		inside = {
-			metadata: true,
-			headers:  false,
-			content:  false
-		}
-
-		last = {
-			line:  '',
-			stuff: ''
-		}
-
 		next until input.eof? || (line = input.readline).match(options[:separator])
 
 		return if !line || line.empty?
 
-		metadata.parse_from line
+		# metadata parsing
+		begin
+			break unless line.match(/^>+/)
 
-		until input.eof? || ((line = input.readline).match(options[:separator]) && last[:line].empty?)
-			if inside[:metadata]
-				if line.match(/^>+/)
-					metadata.parse_from line
-				else
-					inside[:metadata]    = false
-					inside[:headers] = true
+			metadata.parse_from line
+		end until input.eof? || (line = input.readline).match(options[:separator])
 
-					last[:line] = line.chomp
+		# headers parsing
+		current = ''
+		begin
+			break if line.strip.empty?
 
-					next
-				end
-			elsif inside[:headers]
-				if line.strip.empty?
-					inside[:headers] = false
-					inside[:content] = true
+			current << line
+		end until input.eof? || (line = input.readline).match(options[:separator])
+		headers.parse(current)
 
-					headers.parse(last[:stuff])
+		# content parsing
+		current = ''
+		until input.eof? || (line = input.readline).match(options[:separator])
+			next if options[:headers_only]
 
-					last[:line]  = line.chomp
-					last[:stuff] = ''
-
-					next
-				end
-
-				last[:stuff] << line
-			elsif inside[:content]
-				if options[:headers_only]
-					last[:line] = line.chomp
-
-					next
-				end
-
-				last[:stuff] << line
-			end
-
-			last[:line] = line.chomp
+			current << line
 		end
 
-		unless last[:stuff].empty?
-			content.parse(last[:stuff])
+		unless options[:headers_only]
+			content.parse(current.chomp)
 		end
 
+		# put the last separator back in its place
 		if !input.eof? && line
 			input.seek(-line.length, IO::SEEK_CUR)
 		end
