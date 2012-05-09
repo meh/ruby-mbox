@@ -2,9 +2,7 @@
 require 'mbox'
 
 if ARGV.length < 1
-	puts 'You have to pass the mbox.'
-
-	exit 1
+	abort 'You have to pass the mbox.'
 end
 
 puts Mbox.open(ARGV.shift).length
