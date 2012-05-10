@@ -60,15 +60,7 @@ class Content < Array
 				end
 			}
 		else
-			stream = StringIO.new(text)
-
-			content = (!stream.eof?) ? stream.readline : ''
-			until stream.eof? || line = stream.readline
-				content << line
-			end
-			content.chomp!
-
-			self << File.new(Headers.new, content)
+			self << File.new(headers, text)
 		end
 
 		self

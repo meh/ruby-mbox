@@ -96,7 +96,7 @@ class Headers
 			value  = ContentType.parse(value)
 		end
 
-		if tmp = @data[name] && !tmp.is_a?(Array)
+		if (tmp = @data[name]) && !tmp.is_a?(Array)
 			@data[name] = [tmp]
 		end
 
