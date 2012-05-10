@@ -34,11 +34,12 @@ class Mail
 		return if !line || line.empty?
 
 		# metadata parsing
-		begin
+		metadata.parse_from line
+		until input.eof? || (line = input.readline).match(options[:separator])
 			break unless line.match(/^>+/)
 
 			metadata.parse_from line
-		end until input.eof? || (line = input.readline).match(options[:separator])
+		end
 
 		# headers parsing
 		current = ''
@@ -77,6 +78,10 @@ class Mail
 		@content  = content
 	end
 
+	def from
+		metadata.from.first.name
+	end
+
 	def save_to (path)
 		File.open(path, 'w') {|f|
 			f.write to_s
@@ -92,7 +97,7 @@ class Mail
 	end
 
 	def inspect
-		"#<Mail:#{headers['From']}>"
+		"#<Mail:#{from}>"
 	end
 end
 

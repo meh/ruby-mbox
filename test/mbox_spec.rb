@@ -38,6 +38,10 @@ test
 		box.length.should == 3
 	end
 
+	it 'parses metadata properly' do
+		box[0].metadata.from.first.name.should == 'ecls-list-bounces@lists.sourceforge.net'
+	end
+
 	it 'parses headers properly' do
 		box[0].headers.length.should == 2
 		box[1].headers.length.should == 2

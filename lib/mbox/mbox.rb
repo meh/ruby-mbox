@@ -138,7 +138,9 @@ class Mbox
 		length = 0
 
 		lock {
-			while line = @input.readline rescue nil
+			until @input.eof?
+				line = @input.readline
+
 				if line.match(options[:separator]) && last.chomp.empty?
 					length += 1
 				end
