@@ -48,7 +48,7 @@ test
 	end
 
 	it 'parses multiple headers properly' do
-		box[2].headers[:this].length.should == 3
+		box[2].headers[:this].should == ['is a test', 'is a test for multiple headers with the same name', 'no, really']
 	end
 
 	it 'parses the content properly' do
