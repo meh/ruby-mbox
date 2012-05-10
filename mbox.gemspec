@@ -1,6 +1,6 @@
 Gem::Specification.new {|s|
 	s.name         = 'mbox'
-	s.version      = '0.0.4.2'
+	s.version      = '0.0.4.3'
 	s.author       = 'meh.'
 	s.email        = 'meh@paranoici.org'
 	s.homepage     = 'http://github.com/meh/ruby-mbox'
