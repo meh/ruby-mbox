@@ -142,7 +142,7 @@ class Headers
 
 				self[name] = value.strip
 				last       = name
-			elsif self[last]
+			elsif last && self[last]
 				if self[last].is_a?(String)
 					self[last] << " #{line.strip}"
 				elsif self[last].is_a?(Array) && self[last].last.is_a?(String)

@@ -25,7 +25,7 @@ class File
 	attr_reader :name, :headers, :content
 
 	def initialize (headers, content)
-		if headers[:content_type]
+		if headers[:content_type] && headers[:content_type].charset
 			content.force_encoding headers[:content_type].charset
 		end
 
