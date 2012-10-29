@@ -57,18 +57,21 @@ class Connection < EventMachine::Protocols::LineAndTextProtocol
 
 			if command == 'unread'
 				send_response boxes.select {|box|
-					if !$unread[box] || $unread[box].last_check < [File.ctime(box.path), File.mtime(box.path)].max
+					path = box.path
+					last = [File.ctime(path), File.mtime(path)].max
+
+					if !$unread[path] || ($unread[path].last_check < last && last < Time.now)
 						unless $unread[:checking]
 							$unread[:checking] = true
 
 							EM.defer {
-								$unread[box]       = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
+								$unread[path]      = Struct.new(:status, :last_check).new(box.has_unread?, Time.new)
 								$unread[:checking] = false
 							}
 						end
 					end
 
-					$unread[box].status rescue false
+					$unread[path].status rescue false
 				}.map(&:name)
 			end
 		end
