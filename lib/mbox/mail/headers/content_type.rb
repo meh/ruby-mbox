@@ -28,15 +28,15 @@ class ContentType
 		stuff = text.gsub(/\n\r/, '').split(/\s*;\s*/)
 		type  = stuff.shift
 
-		ContentType.new(Hash[stuff.map {|stuff|
-			stuff    = stuff.strip.split(/=/)
-			stuff[0] = stuff[0].to_sym
+		ContentType.new(Hash[stuff.map {|s|
+			s    = s.strip.split('=', 2)
+			s[0] = s[0].to_sym
 
-			if stuff[1][0] == '"' && stuff[1][stuff[1].length-1] == '"'
-				stuff[1] = stuff[1][1, stuff[1].length-2]
+			if s[1][0] == '"' && s[1][s[1].length-1] == '"'
+				s[1] = s[1][1, s[1].length-2]
 			end
 
-			stuff
+			s
 		}].merge(mime: type))
 	end
 
