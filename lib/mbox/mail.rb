@@ -35,6 +35,7 @@ class Mail
 
 		# metadata parsing
 		metadata.parse_from line
+
 		until input.eof? || (line = input.readline).match(options[:separator])
 			break unless line.match(/^>+/)
 
@@ -47,6 +48,13 @@ class Mail
 			break if line.strip.empty?
 
 			current << line
+			if line[0..12] == "Delivered-To:"
+				metadata.parse_to line
+				next
+			end
+			if line[0..7] == "Subject:"
+				metadata.parse_subject line
+			end
 		end until input.eof? || (line = input.readline).match(options[:separator])
 		headers.parse(current)
 
@@ -81,7 +89,19 @@ class Mail
 	def from
 		metadata.from.first.name
 	end
-
+	
+	def date
+		metadata.from.first.date
+	end
+	
+	def to
+		metadata.to.first
+	end
+	
+	def subject
+		metadata.subject.first
+	end
+	
 	def save_to (path)
 		File.open(path, 'w') {|f|
 			f.write to_s
