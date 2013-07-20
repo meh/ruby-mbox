@@ -26,7 +26,11 @@ class File
 
 	def initialize (headers, content)
 		if headers[:content_type] && headers[:content_type].charset
-			content.force_encoding headers[:content_type].charset
+			begin
+				content.force_encoding headers[:content_type].charset
+			rescue
+				content.force_encoding 'BINARY'
+			end
 		end
 
 		if headers[:content_transfer_encoding] == 'base64'
