@@ -20,15 +20,27 @@
 class Mbox; class Mail
 
 class Metadata
-	attr_reader :from
+	attr_reader :from, :to, :subject
 
 	def initialize
 		@from = []
+		@to = []
+		@subject = []
 	end
 
 	def parse_from (line)
 		line.match /^>*From ([^\s]+) (.{24})/ do |m|
 			@from << Struct.new(:name, :date).new(m[1], m[2])
+		end
+	end
+	def parse_to (line)
+		line.match /Delivered-To: (.*)/ do |m|
+			@to << m[1]
+		end
+	end
+	def parse_subject (line)
+		line.match /Subject: (.*)/ do |m|
+			@subject << m[1]
 		end
 	end
 end
