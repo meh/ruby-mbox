@@ -42,13 +42,20 @@ end.parse!
 	end
 }
 
-$unread = {}
+$unread   = {}
+$fetching = false
 
 class Connection < EventMachine::Protocols::LineAndTextProtocol
 	attr_accessor :boxes
 
 	def receive_line (line)
-		whole, target, command, rest = line.match(/^(.*?)\s+(.*?)(?:\s+(.+))?$/).to_a
+		if $fetching
+			send_data %{{"error":"fetching"}}
+
+			return
+		end
+
+		_, target, command, rest = line.match(/^(.*?)\s+(.*?)(?:\s+(.+))?$/).to_a
 
 		boxes = target == '*' ? $boxes : $boxes.select { |box| target.include? box.name }
 
@@ -61,7 +68,7 @@ class Connection < EventMachine::Protocols::LineAndTextProtocol
 					last = [File.ctime(path), File.mtime(path)].max
 
 					if !$unread[path] || ($unread[path].last_check < last && last < Time.now)
-						unless $unread[:checking]
+						unless $unread[:checking] || $fetching
 							$unread[:checking] = true
 
 							EM.defer {
@@ -92,6 +99,10 @@ EM.run {
 	EM.start_server options[:host], options[:port], Connection
 
 	EM.add_periodic_timer options[:every] do
-		EM.system 'fetchmail'
+		$fetching = true
+
+		EM.system 'fetchmail -F' do
+			$fetching = false
+		end
 	end
 }
