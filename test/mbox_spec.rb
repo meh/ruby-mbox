@@ -2,8 +2,6 @@
 require 'rubygems'
 require 'mbox'
 
-require 'pry-debugger'
-
 describe Mbox do
 	let :data do
 		<<-EOF
