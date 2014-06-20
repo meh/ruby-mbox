@@ -1,10 +1,7 @@
-#! /usr/bin/env ruby
-require 'rake'
+require 'rspec/core/rake_task'
 
-task :default => :test
-
-task :test do
-  Dir.chdir 'test'
-
-  sh 'rspec mbox_spec.rb --color --format doc'
+RSpec::Core::RakeTask.new do |task|
+        task.rspec_opts = ['--color', '--format', 'doc', 'test/mbox_spec.rb']
 end
+
+task :default => :spec
