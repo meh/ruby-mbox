@@ -36,7 +36,7 @@ OptionParser.new do |o|
 	end
 end.parse!
 
-%w[INT KILL].each {|sig|
+%w[INT].each {|sig|
 	trap sig do
 		EM.stop_event_loop
 	end
