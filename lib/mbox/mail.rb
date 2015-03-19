@@ -28,6 +28,7 @@ class Mail
 		metadata = Mbox::Mail::Metadata.new
 		headers  = Mbox::Mail::Headers.new
 		content  = Mbox::Mail::Content.new(headers)
+        errors   = []
 
 		next until input.eof? || (line = input.readline).match(options[:separator])
 
@@ -39,7 +40,11 @@ class Mail
 		until input.eof? || (line = input.readline).match(options[:separator])
 			break unless line.match(/^>+/)
 
-			metadata.parse_from line
+            begin
+                metadata.parse_from line
+            rescue Exception => e
+                errors << e
+            end
 		end
 
 		# headers parsing
@@ -56,7 +61,11 @@ class Mail
 				metadata.parse_subject line
 			end
 		end until input.eof? || (line = input.readline).match(options[:separator])
-		headers.parse(current)
+        begin
+            headers.parse(current)
+        rescue Exception => e
+            errors << e
+        end
 
 		# content parsing
 		current = ''
@@ -67,7 +76,11 @@ class Mail
 		end
 
 		unless options[:headers_only]
-			content.parse(current.chomp)
+            begin
+                content.parse(current.chomp)
+            rescue Exception => e
+                errors << e
+            end
 		end
 
 		# put the last separator back in its place
@@ -75,16 +88,21 @@ class Mail
 			input.seek(-line.length, IO::SEEK_CUR)
 		end
 
-		Mail.new(metadata, headers, content)
+		Mail.new(metadata, headers, content, errors)
 	end
 
-	attr_reader :metadata, :headers, :content
+	attr_reader :metadata, :headers, :content, :errors
 
-	def initialize (metadata, headers, content)
+	def initialize (metadata, headers, content, errors)
 		@metadata = metadata
 		@headers  = headers
 		@content  = content
+		@errors   = errors
 	end
+
+    def errors?
+        errors.size > 0
+    end
 
 	def from
 		metadata.from.first.name
