@@ -84,6 +84,19 @@ class Mbox
 		end
 	end
 
+    def reset()
+		@input.seek 0
+    end
+
+    def has_next()
+    end
+
+    def get_next(opts = {})
+		lock {
+            mail = Mail.parse(@input, options.merge(opts))
+        }
+    end
+
 	def each (opts = {})
 		@input.seek 0
 
