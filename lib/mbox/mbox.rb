@@ -88,22 +88,30 @@ class Mbox
 		@input.seek 0
 
 		lock {
-			while mail = Mail.parse(@input, options.merge(opts))
-				yield mail
-			end
+			each_no_lock opts
 		}
+	end
+
+	private def each_no_lock (opts = {})
+		while mail = Mail.parse(@input, options.merge(opts))
+			yield mail
+		end
 	end
 
 	def reverse_each (opts = {})
 		@input.seek 0
 
 		lock {
-                        length = length_no_lock
-			(1...length).each do |offset|
-				mail = index_no_lock((length - offset), opts)
-				yield mail
-			end
+			reverse_each_no_lock opts
 		}
+	end
+
+	private def reverse_each_no_lock (opts = {})
+		length = length_no_lock
+		(1...length).each do |offset|
+			mail = index_no_lock((length - offset), opts)
+			yield mail
+		end
 	end
 
 	def [] (index, opts = {})
@@ -112,7 +120,7 @@ class Mbox
 		}
 	end
 
-	def index_no_lock (index, opts = {})
+	private def index_no_lock (index, opts = {})
 		seek index
 
 		if @input.eof?
@@ -159,7 +167,7 @@ class Mbox
 		length
 	end
 
-	def length_no_lock
+	private def length_no_lock
 		last   = ''
 		length = 0
 
