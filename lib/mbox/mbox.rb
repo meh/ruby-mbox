@@ -94,16 +94,32 @@ class Mbox
 		}
 	end
 
+	def reverse_each (opts = {})
+		@input.seek 0
+
+		lock {
+                        length = length_no_lock
+			(1...length).each do |offset|
+				mail = index_no_lock((length - offset), opts)
+				yield mail
+			end
+		}
+	end
+
 	def [] (index, opts = {})
 		lock {
-			seek index
-
-			if @input.eof?
-				raise IndexError, "#{index} is out of range"
-			end
-
-			Mail.parse(@input, options.merge(opts))
+			index_no_lock index
 		}
+	end
+
+	def index_no_lock (index, opts = {})
+		seek index
+
+		if @input.eof?
+			raise IndexError, "#{index} is out of range"
+		end
+
+		Mail.parse(@input, options.merge(opts))
 	end
 
 	def seek (to, whence = IO::SEEK_SET)
@@ -134,20 +150,28 @@ class Mbox
 	def length
 		@input.seek(0)
 
+		length =0
+
+		lock {
+			length = length_no_lock
+		}
+
+		length
+	end
+
+	def length_no_lock
 		last   = ''
 		length = 0
 
-		lock {
-			until @input.eof?
-				line = @input.readline
+		until @input.eof?
+			line = @input.readline
 
-				if line.match(options[:separator]) && last.chomp.empty?
-					length += 1
-				end
-
-				last = line
+			if line.match(options[:separator]) && last.chomp.empty?
+				length += 1
 			end
-		}
+
+			last = line
+		end
 
 		length
 	end
