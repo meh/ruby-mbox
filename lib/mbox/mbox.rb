@@ -84,29 +84,29 @@ class Mbox
 		end
 	end
 
-	def each (opts = {})
+	def each (opts = {}, &block)
 		@input.seek 0
 
 		lock {
-			each_no_lock opts
+			each_no_lock opts, &block
 		}
 	end
 
-	private def each_no_lock (opts = {})
+	private def each_no_lock (opts = {}, &block)
 		while mail = Mail.parse(@input, options.merge(opts))
 			yield mail
 		end
 	end
 
-	def reverse_each (opts = {})
+	def reverse_each (opts = {}, &block)
 		@input.seek 0
 
 		lock {
-			reverse_each_no_lock opts
+			reverse_each_no_lock opts, &block
 		}
 	end
 
-	private def reverse_each_no_lock (opts = {})
+	private def reverse_each_no_lock (opts = {}, &block)
 		length = length_no_lock
 		(1...length).each do |offset|
 			mail = index_no_lock((length - offset), opts)
