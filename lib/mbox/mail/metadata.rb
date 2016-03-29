@@ -20,12 +20,14 @@
 class Mbox; class Mail
 
 class Metadata
-	attr_reader :from, :to, :subject
+	attr_reader :from, :to, :subject, :id
 
 	def initialize
 		@from = []
 		@to = []
 		@subject = []
+    @id = []
+    @raw = []
 	end
 
 	def parse_from (line)
@@ -41,6 +43,11 @@ class Metadata
 	def parse_subject (line)
 		line.match /Subject: (.*)/ do |m|
 			@subject << m[1]
+		end
+	end
+	def parse_id (line)
+		line.match /Message-ID: (.*)/ do |m|
+			@id << m[1]
 		end
 	end
 end
