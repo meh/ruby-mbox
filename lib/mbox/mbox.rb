@@ -92,12 +92,6 @@ class Mbox
 		}
 	end
 
-	private def each_no_lock (opts = {}, &block)
-		while mail = Mail.parse(@input, options.merge(opts))
-			yield mail
-		end
-	end
-
 	def reverse_each (opts = {}, &block)
 		@input.seek 0
 
@@ -106,28 +100,10 @@ class Mbox
 		}
 	end
 
-	private def reverse_each_no_lock (opts = {}, &block)
-		length = length_no_lock
-		(1...length).each do |offset|
-			mail = index_no_lock((length - offset), opts)
-			yield mail
-		end
-	end
-
 	def [] (index, opts = {})
 		lock {
 			index_no_lock index
 		}
-	end
-
-	private def index_no_lock (index, opts = {})
-		seek index
-
-		if @input.eof?
-			raise IndexError, "#{index} is out of range"
-		end
-
-		Mail.parse(@input, options.merge(opts))
 	end
 
 	def seek (to, whence = IO::SEEK_SET)
@@ -167,7 +143,47 @@ class Mbox
 		length
 	end
 
-	private def length_no_lock
+	alias size length
+
+	def has_unread?
+		each headers_only: true do |mail|
+			return true if mail.unread?
+		end
+
+		false
+	end
+
+	def inspect
+		"#<Mbox:#{name} length=#{length}>"
+	end
+
+	private
+
+	def each_no_lock (opts = {}, &block)
+		while mail = Mail.parse(@input, options.merge(opts))
+			yield mail
+		end
+	end
+
+	def reverse_each_no_lock (opts = {}, &block)
+		length = length_no_lock
+		(1...length).each do |offset|
+			mail = index_no_lock((length - offset), opts)
+			yield mail
+		end
+	end
+
+	def index_no_lock (index, opts = {})
+		seek index
+
+		if @input.eof?
+			raise IndexError, "#{index} is out of range"
+		end
+
+		Mail.parse(@input, options.merge(opts))
+	end
+
+	def length_no_lock
 		last   = ''
 		length = 0
 
@@ -182,19 +198,5 @@ class Mbox
 		end
 
 		length
-	end
-
-	alias size length
-
-	def has_unread?
-		each headers_only: true do |mail|
-			return true if mail.unread?
-		end
-
-		false
-	end
-
-	def inspect
-		"#<Mbox:#{name} length=#{length}>"
 	end
 end

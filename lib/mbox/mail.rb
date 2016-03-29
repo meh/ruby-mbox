@@ -34,11 +34,12 @@ class Mail
 		return if !line || line.empty?
 
 		# metadata parsing
+		raw = line
 		metadata.parse_from line
 
 		until input.eof? || (line = input.readline).match(options[:separator])
 			break unless line.match(/^>+/)
-
+			raw << line
 			metadata.parse_from line
 		end
 
@@ -55,8 +56,13 @@ class Mail
 			if line[0..7] == "Subject:"
 				metadata.parse_subject line
 			end
+			if line[0..10] == "Message-ID:"
+				metadata.parse_id line
+			end
 		end until input.eof? || (line = input.readline).match(options[:separator])
 		headers.parse(current)
+
+		raw << current
 
 		# content parsing
 		current = ''
@@ -65,6 +71,8 @@ class Mail
 
 			current << line
 		end
+
+		raw << current
 
 		unless options[:headers_only]
 			content.parse(current.chomp)
@@ -75,33 +83,34 @@ class Mail
 			input.seek(-line.length, IO::SEEK_CUR)
 		end
 
-		Mail.new(metadata, headers, content)
+		Mail.new(metadata, headers, content, raw)
 	end
 
-	attr_reader :metadata, :headers, :content
+	attr_reader :metadata, :headers, :content, :raw
 
-	def initialize (metadata, headers, content)
+	def initialize (metadata, headers, content, raw)
 		@metadata = metadata
 		@headers  = headers
 		@content  = content
+    @raw      = raw
 	end
 
 	def from
 		metadata.from.first.name
 	end
-	
+
 	def date
 		metadata.from.first.date
 	end
-	
+
 	def to
 		metadata.to.first
 	end
-	
+
 	def subject
 		metadata.subject.first
 	end
-	
+
 	def save_to (path)
 		File.open(path, 'w') {|f|
 			f.write to_s
